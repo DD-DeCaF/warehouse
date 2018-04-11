@@ -1,0 +1,60 @@
+sudo: required
+language: minimal
+
+git:
+  depth: 2
+
+services:
+  - docker
+
+env:
+  global:
+    - IMAGE_TAG=travis-ci-test
+    - DEV_IMAGE=dddecaf/warehouse:${IMAGE_TAG}
+    - PROD_IMAGE=dddecaf/warehouse:travis-ci-prod
+  matrix:
+    - TARGET=test-travis
+    - TARGET=flake8
+    - TARGET=isort
+    - TARGET=license
+
+matrix:
+  fast_finish: true
+
+before_script:
+  - docker login -u=decaftravis -p=${DOCKER_PASSWORD}
+  - make network
+
+script:
+  - docker pull ${DEV_IMAGE}
+  - make ${TARGET}
+
+stages:
+  - build
+  - test
+  - name: deploy
+    if: branch = master
+
+jobs:
+  include:
+    - stage: build
+      script:
+        - docker build --build-arg PIPENV_FLAGS="--dev --deploy" -t ${DEV_IMAGE} .
+        - docker build --build-arg PIPENV_FLAGS="--deploy" -t ${PROD_IMAGE} .
+        - docker push ${DEV_IMAGE}
+        - docker push ${PROD_IMAGE}
+    - stage: deploy
+      script:
+        - docker pull ${PROD_IMAGE}
+      deploy:
+        provider: script
+        script: ./scripts/push_to_hub.sh
+
+notifications:
+  email: false
+  slack:
+    rooms:
+      - ${SLACK_ACCOUNT}:${SLACK_TOKEN}#${SLACK_CHANNEL}
+    on_success: never
+    on_failure: always
+    on_pull_requests: false
