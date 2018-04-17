@@ -1,5 +1,4 @@
-# Copyright (c) 2018, Novo Nordisk Foundation Center for Biosustainability,
-# Technical University of Denmark.
+# Copyright 2018 Novo Nordisk Foundation Center for Biosustainability, DTU.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test expected functioning of the main app."""
+from warehouse.app import db
 
 
-def test_mode(app):
-    """Ensure that the app is in testing mode."""
-    assert app.testing
+class Strain(db.Model):
+    project_id = db.Column(db.Integer)
 
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
 
-def test_strains(app):
-    pass
+    parent_id = db.Column(db.Integer, db.ForeignKey('strain.id'))
+    parent = db.relationship('Strain')
+
+    genotype = db.Column(db.Text())

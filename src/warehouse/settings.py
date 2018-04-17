@@ -64,6 +64,16 @@ class Default(object):
             },
         }
 
+        os.environ.setdefault('POSTGRES_ENV_USERNAME', 'postgres')
+        os.environ.setdefault('POSTGRES_ENV_PASS', 'postgres')
+        os.environ.setdefault('POSTGRES_DB_NAME', 'postgres')
+        self.SQLALCHEMY_DATABASE_URI = 'postgres://{POSTGRES_ENV_USERNAME}:' \
+                                       '{POSTGRES_ENV_PASS}@{POSTGRES_PORT_5432_TCP_ADDR}/' \
+                                       '{POSTGRES_DB_NAME}'.format(**os.environ)
+        self.SQLALCHEMY_TRACK_MODIFICATIONS = False
+        self.JWT_SECRET_KEY = 'secret'
+        self.JWT_ACCESS_TOKEN_EXPIRES = False
+
 
 class Development(Default):
     """Development environment configuration."""
@@ -90,4 +100,6 @@ class Production(Default):
         super().__init__(**kwargs)
         self.DEBUG = False
         self.SECRET_KEY = os.environ['SECRET_KEY']
+        self.JWT_SECRET_KEY = os.environ['JWT_SECRET_KEY']
+        self.JWT_PUBLIC_KEY = os.environ['JWT_PUBLIC_KEY']
         self.LOGGING['root']['level'] = 'INFO'

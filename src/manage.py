@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) 2018, Novo Nordisk Foundation Center for Biosustainability,
 # Technical University of Denmark.
 #
@@ -13,13 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test expected functioning of the main app."""
+from flask_script import Manager
+from warehouse.commands import Fixtures
+from warehouse.app import app
 
-
-def test_mode(app):
-    """Ensure that the app is in testing mode."""
-    assert app.testing
-
-
-def test_strains(app):
-    pass
+manager = Manager(app)
+manager.add_command('fixtures', Fixtures)
+manager.run()

@@ -14,8 +14,12 @@ network:
 	docker network inspect DD-DeCaF >/dev/null 2>&1 || \
 		docker network create DD-DeCaF
 
+## Create docker database volume
+volume:
+	docker volume create --name=warehouse
+
 ## Build local docker images.
-build: network
+build: network volume
 	docker-compose build
 	./scripts/copy_pipenv_lockfile.sh
 
@@ -39,6 +43,36 @@ test-travis:
 	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
 	docker-compose run --rm -e ENVIRONMENT=testing $(ci_env)  web \
 		/bin/sh -c "pytest -s --cov=src/warehouse tests && codecov"
+
+## Init the alembic
+init:
+	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
+	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+		/bin/sh -c "flask db init"
+
+## Autogenerate a migration revision
+revision:
+	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
+	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+		/bin/sh -c "flask db revision --message $(message) --autogenerate"
+
+## Upgrade the database
+upgrade:
+	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
+	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+		/bin/sh -c "flask db upgrade $(args)"
+
+## Downgrade the database
+downgrade:
+	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
+	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+		/bin/sh -c "flask db downgrade $(args)"
+
+## Downgrade the database
+fixture:
+	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
+	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+		/bin/sh -c "./src/manage.py fixtures strains"
 
 ## Run flake8.
 flake8:
@@ -66,6 +100,7 @@ stop:
 ## Stop all services and remove containers.
 clean:
 	docker-compose down
+	@echo "If you really want to remove all data, also run 'docker volume rm warehouse'."
 
 ## Follow the logs.
 logs:

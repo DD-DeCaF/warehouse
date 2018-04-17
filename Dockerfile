@@ -28,7 +28,8 @@ COPY Pipfile* "${CWD}/"
 # Still present as of pipenv==11.9.0.
 RUN set -x \
     && ln -sf /usr/local/bin/python /bin/python \
-    && apk add --no-cache --virtual .build-deps g++ \
+    && apk add postgresql-libs \
+    && apk add --no-cache --virtual .build-deps g++ musl-dev postgresql-dev \
     && pip install --upgrade pip setuptools wheel pipenv \
     && pipenv install --system ${PIPENV_FLAGS} \
     && rm -rf /root/.cache/pip \

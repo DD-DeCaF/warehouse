@@ -13,13 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test expected functioning of the main app."""
+import yaml
+from flask_script import Manager
+
+from warehouse.app import db, app
+from warehouse.models import Strain
 
 
-def test_mode(app):
-    """Ensure that the app is in testing mode."""
-    assert app.testing
+Fixtures = Manager(usage="Populate the database with fixtures")
 
 
-def test_strains(app):
-    pass
+@Fixtures.command
+def strains(filepath='fixtures/strains.yaml'):
+    strains = yaml.load(open(filepath, 'r'))
+    for d in strains:
+        strain = Strain(**d)
+        db.session.add(strain)
+        db.session.flush()
+    db.session.commit()
+    app.logger.debug('All strains is added: {} objects in db'.format(Strain.query.count()))

@@ -22,30 +22,39 @@ import os
 from flask import Flask
 from flask_cors import CORS
 from flask_restplus import Api
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
 from raven.contrib.flask import Sentry
 
 
 app = Flask(__name__)
+if os.environ["ENVIRONMENT"] == "production":
+    from warehouse.settings import Production
+
+    app.config.from_object(Production())
+elif os.environ["ENVIRONMENT"] == "testing":
+    from warehouse.settings import Testing
+
+    app.config.from_object(Testing())
+    app.testing = True
+else:
+    from warehouse.settings import Development
+
+    app.config.from_object(Development())
+jwt = JWTManager(app)
 api = Api(
     title="warehouse",
     version="0.1.0",
     description="The storage for the experimental data used for modeling: omics, strains, media etc",
 )
+jwt._set_error_handler_callbacks(api)  # until https://github.com/noirbizarre/flask-restplus/issues/340 is fixed
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 
 def init_app(application, interface):
     """Initialize the main app with config information and routes."""
-    if os.environ["ENVIRONMENT"] == "production":
-        from warehouse.settings import Production
-        application.config.from_object(Production())
-    elif os.environ["ENVIRONMENT"] == "testing":
-        from warehouse.settings import Testing
-        application.config.from_object(Testing())
-        application.testing = True
-    else:
-        from warehouse.settings import Development
-        application.config.from_object(Development())
-
     # Configure logging
     # The flask logger, when created, disables existing loggers. The following
     # statement ensures the flask logger is created, so that it doesn't disable
@@ -60,8 +69,7 @@ def init_app(application, interface):
         sentry.init_app(application)
 
     # Add routes and resources.
-    from warehouse import resources
-    interface.add_resource(resources.HelloWorld, "/")
+    from warehouse import resources, models
     interface.init_app(application)
 
     # Add CORS information for all resources.

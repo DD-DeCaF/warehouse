@@ -1,0 +1,7 @@
+---
+- project_id: null
+  name: "wild type"
+  genotype: ""
+- project_id: 1
+  name: "knockout"
+  genotype: -b001

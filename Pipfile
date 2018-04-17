@@ -7,8 +7,15 @@ name = "pypi"
 Flask = "*"
 Flask-Cors = "*"
 flask-restplus = "*"
+flask-sqlalchemy = "*"
+Flask-Migrate = "*"
+flask-jwt-extended = "*"
+Flask-Fixtures = "*"
+Flask-Script = "*"
+psycopg2 = "*"
 gunicorn = "*"
 gevent = "*"
+pyyaml = "*"
 raven = {version = "*", extras = ["flask"]}
 
 [dev-packages]
