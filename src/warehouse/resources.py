@@ -14,21 +14,34 @@
 # limitations under the License.
 
 """Implement RESTful API endpoints using resources."""
-
 from flask_restplus import Resource, fields
 from flask_jwt_extended import jwt_required, jwt_optional, create_access_token, get_jwt_claims
 
 from warehouse.app import app, api, db, jwt
-from warehouse.models import Strain
+from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity
+from warehouse.utils import CRUD
 
 
-strain = api.model('Strain', {
+base_schema = {
     'project_id': fields.Integer,
     'id': fields.Integer,
     'name': fields.String,
+}
+
+organism_schema = api.model('Organism', base_schema)
+namespace_schema = api.model('Namespace', base_schema)
+type_schema = api.model('BiologicalEntityType', base_schema)
+
+strain_schema = api.model('Strain', {**base_schema, **{
     'parent_id': fields.Integer,
     'genotype': fields.String,
-})
+    'organism_id': fields.Integer,
+}})
+biological_entity_schema = api.model('BiologicalEntity', {**base_schema, **{
+    'namespace_id': fields.Integer,
+    'reference': fields.String,
+    'type_id': fields.Integer,
+}})
 
 
 @jwt.claims_verification_loader
@@ -37,65 +50,70 @@ def project_claims_verification(claims):
     return api.payload is None or ('prj' in claims and api.payload['project_id'] in claims['prj'])
 
 
-def filter_by_jwt_claims(query):
-    projects = get_jwt_claims().get('prj', [])
-    return query.filter(Strain.project_id.in_(projects) | Strain.project_id.is_(None))
+def crud_class_factory(model, route, schema, name, name_plural=None):
+    if name_plural is None:
+        name_plural = name + 's'
+
+    def docstring(*sub):
+        def inner(obj):
+            obj.__doc__ = obj.__doc__.format(*sub)
+            return obj
+        return inner
+
+    @api.route(route)
+    class List(Resource):
+        @api.marshal_with(schema)
+        @jwt_optional
+        @docstring(name_plural)
+        def get(self):
+            """Get all the {}"""
+            return CRUD.get(model)
+
+        @api.marshal_with(schema)
+        @api.expect(schema)
+        @jwt_required
+        @docstring(name)
+        def post(self):
+            """Create a {}"""
+            return CRUD.post(model)
+
+    @api.route(route + '/<int:id>')
+    @api.response(404, 'Not found')
+    @api.param('id', 'The identifier')
+    class Item(Resource):
+        @api.marshal_with(schema)
+        @jwt_optional
+        @docstring(name)
+        def get(self, id):
+            """Get the {} by id"""
+            return CRUD.get_by_id(model, id)
+
+        @api.marshal_with(schema)
+        @jwt_required
+        @docstring(name)
+        def delete(self, id):
+            """Delete the {} by id"""
+            return CRUD.delete(model, id)
+
+        @api.marshal_with(schema)
+        @api.expect(schema)
+        @jwt_required
+        @docstring(name)
+        def put(self, id):
+            """Update the {} by id"""
+            return CRUD.put(model, id)
+
+    return List, Item
 
 
-def get_object(model, object_id):
-    obj = filter_by_jwt_claims(model.query).filter_by(id=object_id).first()
-    if obj is None:
-        api.abort(404, "{} {} doesn't exist".format(model, object_id))
-    return obj
-
-
-@api.route('/strains')
-class Strains(Resource):
-    @api.marshal_with(strain)
-    @jwt_optional
-    def get(self):
-        """Get all the strains"""
-        return filter_by_jwt_claims(Strain.query).all()
-
-    @api.marshal_with(strain)
-    @api.expect(strain)
-    @jwt_required
-    def post(self):
-        """Create strain"""
-        app.logger.debug(api.payload)
-        strain = Strain(**api.payload)
-        app.logger.debug(strain)
-        db.session.add(strain)
-        db.session.commit()
-        return strain
-
-
-@api.route('/strains/<int:id>')
-@api.response(404, 'Not found')
-@api.param('id', 'The identifier')
-class Strains(Resource):
-    @api.marshal_with(strain)
-    @jwt_optional
-    def get(self, id):
-        """Get strain by id"""
-        return get_object(Strain, id)
-
-    @api.marshal_with(strain)
-    @jwt_required
-    def delete(self, id):
-        """Delete strain by id"""
-        strain = get_object(Strain, id)
-        db.session.delete(strain)
-        db.session.commit()
-
-    @api.marshal_with(strain)
-    @api.expect(strain)
-    @jwt_required
-    def put(self, id):
-        """Update strain by id"""
-        strain = get_object(Strain, id)
-        for field in api.payload:
-            if field != 'id':
-                strain[field] = api.payload[field]
-        db.session.merge(strain)
-        db.session.commit()
+OrganismList, Organisms = crud_class_factory(Organism, '/organisms', organism_schema, 'organism')
+StrainList, Strains = crud_class_factory(Strain, '/strains', strain_schema, 'strain')
+NamespaceList, Namespaces = crud_class_factory(Namespace, '/namespaces', namespace_schema, 'namespace')
+TypeList, Types = crud_class_factory(BiologicalEntityType, '/types', type_schema, 'biological entity type')
+BiologicalEntityList, BiologicalEntities = crud_class_factory(
+    BiologicalEntity,
+    '/bioentities',
+    biological_entity_schema,
+    'biological entity',
+    'biological entities',
+)

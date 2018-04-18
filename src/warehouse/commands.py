@@ -17,18 +17,52 @@ import yaml
 from flask_script import Manager
 
 from warehouse.app import db, app
-from warehouse.models import Strain
+from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity
 
 
 Fixtures = Manager(usage="Populate the database with fixtures")
 
 
-@Fixtures.command
-def strains(filepath='fixtures/strains.yaml'):
-    strains = yaml.load(open(filepath, 'r'))
-    for d in strains:
-        strain = Strain(**d)
-        db.session.add(strain)
+def add_from_file(filepath, model):
+    objects = yaml.load(open(filepath, 'r'))
+    for obj in objects:
+        new_object = model(**obj)
+        db.session.add(new_object)
         db.session.flush()
     db.session.commit()
-    app.logger.debug('All strains is added: {} objects in db'.format(Strain.query.count()))
+    app.logger.debug('{} is added: {} objects in db'.format(model, model.query.count()))
+
+
+@Fixtures.command
+def organisms(filepath='fixtures/organisms.yaml'):
+    add_from_file(filepath, Organism)
+
+
+@Fixtures.command
+def strains(filepath='fixtures/strains.yaml'):
+    add_from_file(filepath, Strain)
+
+
+@Fixtures.command
+def namespaces(filepath='fixtures/namespaces.yaml'):
+    add_from_file(filepath, Namespace)
+
+
+@Fixtures.command
+def types(filepath='fixtures/types.yaml'):
+    add_from_file(filepath, BiologicalEntityType)
+
+
+@Fixtures.command
+def biological_entities(filepath='fixtures/biological_entities.yaml'):
+    add_from_file(filepath, BiologicalEntity)
+
+
+@Fixtures.command
+def populate():
+    types()
+    namespaces()
+    biological_entities()
+    organisms()
+    strains()
+

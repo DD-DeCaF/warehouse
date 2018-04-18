@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from sqlalchemy.orm import backref
 from warehouse.app import db
+
+
+class Organism(db.Model):
+    project_id = db.Column(db.Integer)
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
 
 
 class Strain(db.Model):
@@ -25,3 +33,54 @@ class Strain(db.Model):
     parent = db.relationship('Strain')
 
     genotype = db.Column(db.Text())
+
+    organism_id = db.Column(db.Integer, db.ForeignKey('organism.id'))
+    organism = db.relationship(Organism)
+
+
+class Medium(db.Model):
+    project_id = db.Column(db.Integer)
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
+
+    ph = db.Column(db.Float, nullable=False)
+
+
+class Namespace(db.Model):
+    project_id = db.Column(db.Integer)
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
+
+
+class BiologicalEntityType(db.Model):
+    project_id = db.Column(db.Integer)
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
+
+
+class BiologicalEntity(db.Model):
+    project_id = db.Column(db.Integer)
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
+
+    namespace_id = db.Column(db.Integer, db.ForeignKey('namespace.id'))
+    namespace = db.relationship(Namespace)
+
+    reference = db.Column(db.String(256), nullable=False)
+
+    type_id = db.Column(db.Integer, db.ForeignKey('biological_entity_type.id'))
+    type = db.relationship(BiologicalEntityType)
+
+
+class MediumCompound(db.Model):
+    medium_id = db.Column(db.Integer, db.ForeignKey(Medium.id), primary_key=True)
+    compound_id = db.Column(db.Integer, db.ForeignKey(BiologicalEntity.id), primary_key=True)
+
+    mass_concentration = db.Column(db.Float, nullable=False)
+
+    medium = db.relationship(Medium, backref=backref('contents', cascade="all, delete-orphan", lazy='dynamic'))
+    compound = db.relationship(BiologicalEntity)

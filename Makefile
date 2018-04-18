@@ -72,7 +72,7 @@ downgrade:
 fixture:
 	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
 	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
-		/bin/sh -c "./src/manage.py fixtures strains"
+		/bin/sh -c "./src/manage.py fixtures populate"
 
 ## Run flake8.
 flake8:
