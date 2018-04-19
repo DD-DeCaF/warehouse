@@ -19,7 +19,7 @@ from flask_jwt_extended import jwt_required, jwt_optional, create_access_token, 
 
 from warehouse.app import app, api, db, jwt
 from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit
-from warehouse.utils import CRUD
+from warehouse.utils import CRUD, filter_by_jwt_claims
 
 
 base_schema = {
@@ -141,16 +141,17 @@ BiologicalEntityList, BiologicalEntities = crud_class_factory(
 
 
 # TODO: find out if the speed is the issue
+def query_compounds(query):
+    return query.join(BiologicalEntity.type).filter(BiologicalEntityType.name == 'compound')
+
+
 @api.route('/bioentities/compounds')
 class Chemicals(Resource):
     @api.marshal_with(biological_entity_schema)
     @jwt_optional
     def get(self):
         """List all the compounds"""
-        return CRUD.get_query(BiologicalEntity)\
-            .join(BiologicalEntity.type)\
-            .filter(BiologicalEntityType.name == 'compound')\
-            .all()
+        return query_compounds(CRUD.get_query(BiologicalEntity)).all()
 
 
 @api.marshal_with(medium_schema)
@@ -178,9 +179,17 @@ def serialized_medium_with_mass_concentrations(m):
     return serialized
 
 
+class NotCompound(Exception):
+    pass
+
+
+# TODO: make a copy if the compounds are from the different project
 def set_compounds_from_payload(medium):
     compound_dict = {c['id']: c['mass_concentration'] for c in api.payload['compounds']}
-    medium.compounds = BiologicalEntity.query.filter(BiologicalEntity.id.in_(compound_dict.keys())).all()
+    entities = filter_by_jwt_claims(BiologicalEntity).filter(BiologicalEntity.id.in_(compound_dict.keys()))
+    if query_compounds(entities).count() != entities.count():
+        raise NotCompound
+    medium.compounds = entities.all()
     db.session.add(medium)
     db.session.flush()
     for c in medium.composition:
@@ -211,7 +220,10 @@ class MediaList(Resource):
             name=api.payload['name'],
             ph=api.payload['ph'],
         )
-        set_compounds_from_payload(medium)
+        try:
+            set_compounds_from_payload(medium)
+        except NotCompound:
+            api.abort(400, "All the biological entities have to be compounds")
         return serialized_medium_with_mass_concentrations(medium)
 
 
@@ -236,5 +248,8 @@ class Media(Resource):
     def put(self, id):
         """Update the medium by id"""
         medium = CRUD.get_by_id(Medium, id)
-        set_compounds_from_payload(medium)
+        try:
+            set_compounds_from_payload(medium)
+        except NotCompound:
+            api.abort(400, "All the biological entities have to be compounds")
         return serialized_medium_with_mass_concentrations(medium)
