@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from sqlalchemy.orm import backref
 from warehouse.app import db
 
 
@@ -46,6 +45,11 @@ class Medium(db.Model):
 
     ph = db.Column(db.Float, nullable=False)
 
+    compounds = db.relationship(
+        "BiologicalEntity",
+        secondary='medium_compound',
+    )
+
 
 class Namespace(db.Model):
     project_id = db.Column(db.Integer)
@@ -77,10 +81,20 @@ class BiologicalEntity(db.Model):
 
 
 class MediumCompound(db.Model):
-    medium_id = db.Column(db.Integer, db.ForeignKey(Medium.id), primary_key=True)
-    compound_id = db.Column(db.Integer, db.ForeignKey(BiologicalEntity.id), primary_key=True)
+    __table_args__ = (
+        db.PrimaryKeyConstraint('medium_id', 'compound_id'),
+    )
 
-    mass_concentration = db.Column(db.Float, nullable=False)
+    medium_id = db.Column(db.Integer, db.ForeignKey('medium.id'))
+    compound_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'))
+    mass_concentration = db.Column(db.Float)
 
-    medium = db.relationship(Medium, backref=backref('contents', cascade="all, delete-orphan", lazy='dynamic'))
+    medium = db.relationship(Medium, backref=db.backref('composition', cascade="all, delete-orphan", lazy='dynamic'))
     compound = db.relationship(BiologicalEntity)
+
+
+class Unit(db.Model):
+    project_id = db.Column(db.Integer)
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)

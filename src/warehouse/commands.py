@@ -17,7 +17,7 @@ import yaml
 from flask_script import Manager
 
 from warehouse.app import db, app
-from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity
+from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium
 
 
 Fixtures = Manager(usage="Populate the database with fixtures")
@@ -59,10 +59,32 @@ def biological_entities(filepath='fixtures/biological_entities.yaml'):
 
 
 @Fixtures.command
+def media(filepath='fixtures/media.yaml'):
+    objects = yaml.load(open(filepath, 'r'))
+    for obj in objects:
+        composition = dict(zip(obj['compounds'], obj['mass_concentrations']))
+        medium = Medium(
+            project_id=obj['project_id'],
+            name=obj['name'],
+            ph=obj['ph'],
+        )
+        medium.compounds = BiologicalEntity.query.filter(BiologicalEntity.id.in_(obj['compounds'])).all()
+        db.session.add(medium)
+        db.session.flush()
+        app.logger.debug(medium.composition.all())
+        for c in medium.composition:
+            app.logger.debug(c)
+            c.mass_concentration = composition[c.compound_id]
+        db.session.flush()
+    db.session.commit()
+
+
+@Fixtures.command
 def populate():
     types()
     namespaces()
     biological_entities()
+    media()
     organisms()
     strains()
 

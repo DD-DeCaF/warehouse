@@ -14,11 +14,11 @@
 # limitations under the License.
 
 """Implement RESTful API endpoints using resources."""
-from flask_restplus import Resource, fields
+from flask_restplus import Resource, fields, marshal_with_field
 from flask_jwt_extended import jwt_required, jwt_optional, create_access_token, get_jwt_claims
 
 from warehouse.app import app, api, db, jwt
-from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity
+from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit
 from warehouse.utils import CRUD
 
 
@@ -31,16 +31,37 @@ base_schema = {
 organism_schema = api.model('Organism', base_schema)
 namespace_schema = api.model('Namespace', base_schema)
 type_schema = api.model('BiologicalEntityType', base_schema)
+unit_schema = api.model('UnitType', base_schema)
 
 strain_schema = api.model('Strain', {**base_schema, **{
     'parent_id': fields.Integer,
     'genotype': fields.String,
     'organism_id': fields.Integer,
 }})
+
 biological_entity_schema = api.model('BiologicalEntity', {**base_schema, **{
     'namespace_id': fields.Integer,
     'reference': fields.String,
     'type_id': fields.Integer,
+}})
+
+medium_compound_schema = api.model('MediumCompound', {**biological_entity_schema, **{
+    'mass_concentration': fields.Float
+}})
+
+medium_compound_simple_schema = api.model('MediumCompoundSimple', {
+    'id': fields.Integer,
+    'mass_concentration': fields.Float,
+})
+
+medium_schema = api.model('Medium', {**base_schema, **{
+    'ph': fields.Float,
+    'compounds': fields.List(fields.Nested(medium_compound_schema)),
+}})
+
+medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
+    'ph': fields.Float,
+    'compounds': fields.List(fields.Nested(medium_compound_simple_schema)),
 }})
 
 
@@ -66,7 +87,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None):
         @jwt_optional
         @docstring(name_plural)
         def get(self):
-            """Get all the {}"""
+            """List all the {}"""
             return CRUD.get(model)
 
         @api.marshal_with(schema)
@@ -88,12 +109,11 @@ def crud_class_factory(model, route, schema, name, name_plural=None):
             """Get the {} by id"""
             return CRUD.get_by_id(model, id)
 
-        @api.marshal_with(schema)
         @jwt_required
         @docstring(name)
         def delete(self, id):
             """Delete the {} by id"""
-            return CRUD.delete(model, id)
+            CRUD.delete(model, id)
 
         @api.marshal_with(schema)
         @api.expect(schema)
@@ -110,6 +130,7 @@ OrganismList, Organisms = crud_class_factory(Organism, '/organisms', organism_sc
 StrainList, Strains = crud_class_factory(Strain, '/strains', strain_schema, 'strain')
 NamespaceList, Namespaces = crud_class_factory(Namespace, '/namespaces', namespace_schema, 'namespace')
 TypeList, Types = crud_class_factory(BiologicalEntityType, '/types', type_schema, 'biological entity type')
+UnitList, Units = crud_class_factory(Unit, '/units', unit_schema, 'unit')
 BiologicalEntityList, BiologicalEntities = crud_class_factory(
     BiologicalEntity,
     '/bioentities',
@@ -117,3 +138,103 @@ BiologicalEntityList, BiologicalEntities = crud_class_factory(
     'biological entity',
     'biological entities',
 )
+
+
+# TODO: find out if the speed is the issue
+@api.route('/bioentities/compounds')
+class Chemicals(Resource):
+    @api.marshal_with(biological_entity_schema)
+    @jwt_optional
+    def get(self):
+        """List all the compounds"""
+        return CRUD.get_query(BiologicalEntity)\
+            .join(BiologicalEntity.type)\
+            .filter(BiologicalEntityType.name == 'compound')\
+            .all()
+
+
+@api.marshal_with(medium_schema)
+def serialized_medium(medium):
+    return medium
+
+
+@marshal_with_field(fields.List(fields.Nested(medium_compound_schema)))
+def serialized_compounds(medium):
+    return medium.compounds
+
+
+def serialized_compounds_with_mass_concentrations(medium):
+    # TODO: join?
+    compositions = {c.compound_id: c.mass_concentration for c in medium.composition}
+    compounds = serialized_compounds(medium)
+    for compound in compounds:
+        compound['mass_concentration'] = compositions[compound['id']]
+    return compounds
+
+
+def serialized_medium_with_mass_concentrations(m):
+    serialized = serialized_medium(m)
+    serialized['compounds'] = serialized_compounds_with_mass_concentrations(m)
+    return serialized
+
+
+def set_compounds_from_payload(medium):
+    compound_dict = {c['id']: c['mass_concentration'] for c in api.payload['compounds']}
+    medium.compounds = BiologicalEntity.query.filter(BiologicalEntity.id.in_(compound_dict.keys())).all()
+    db.session.add(medium)
+    db.session.flush()
+    for c in medium.composition:
+        c.mass_concentration = compound_dict[c.compound_id]
+    db.session.commit()
+
+
+@api.route('/media')
+class MediaList(Resource):
+    @api.marshal_with(medium_schema)
+    @jwt_optional
+    def get(self):
+        """List all the media and their recipes"""
+        result = []
+        media = CRUD.get(Medium)
+        for m in media:
+            serialized = serialized_medium_with_mass_concentrations(m)
+            result.append(serialized)
+        return result
+
+    @api.marshal_with(medium_schema)
+    @api.expect(medium_simple_schema)
+    @jwt_required
+    def post(self):
+        """Create a medium by defining the recipe"""
+        medium = Medium(
+            project_id=api.payload['project_id'],
+            name=api.payload['name'],
+            ph=api.payload['ph'],
+        )
+        set_compounds_from_payload(medium)
+        return serialized_medium_with_mass_concentrations(medium)
+
+
+@api.route('/media/<int:id>')
+@api.response(404, 'Not found')
+@api.param('id', 'The identifier')
+class Media(Resource):
+    @api.marshal_with(medium_schema)
+    @jwt_optional
+    def get(self, id):
+        """Get the medium by id"""
+        return serialized_medium_with_mass_concentrations(CRUD.get_by_id(Medium, id))
+
+    @jwt_required
+    def delete(self, id):
+        """Delete the medium by id - compounds will not be deleted"""
+        CRUD.delete(Medium, id)
+
+    @api.marshal_with(medium_schema)
+    @api.expect(medium_simple_schema)
+    @jwt_required
+    def put(self, id):
+        """Update the medium by id"""
+        medium = CRUD.get_by_id(Medium, id)
+        set_compounds_from_payload(medium)
+        return serialized_medium_with_mass_concentrations(medium)
