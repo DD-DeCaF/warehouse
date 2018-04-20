@@ -17,7 +17,7 @@ import yaml
 from flask_script import Manager
 
 from warehouse.app import db, app
-from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium
+from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit
 
 
 Fixtures = Manager(usage="Populate the database with fixtures")
@@ -54,6 +54,11 @@ def types(filepath='fixtures/types.yaml'):
 
 
 @Fixtures.command
+def units(filepath='fixtures/units.yaml'):
+    add_from_file(filepath, Unit)
+
+
+@Fixtures.command
 def biological_entities(filepath='fixtures/biological_entities.yaml'):
     add_from_file(filepath, BiologicalEntity)
 
@@ -81,6 +86,7 @@ def media(filepath='fixtures/media.yaml'):
 
 @Fixtures.command
 def populate():
+    units()
     types()
     namespaces()
     biological_entities()

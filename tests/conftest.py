@@ -17,7 +17,10 @@
 
 import pytest
 
+from flask_jwt_extended import create_access_token
+
 from warehouse.app import api
+from warehouse.app import jwt
 from warehouse.app import app as app_
 from warehouse.app import init_app
 
@@ -34,3 +37,16 @@ def client(app):
     """Provide a Flask test client to be used by almost all test cases."""
     with app.test_client() as client:
         yield client
+
+
+@pytest.fixture(scope="session")
+def tokens(app):
+    """Provides two tokens with different claims to test the permissions"""
+    @jwt.user_claims_loader
+    def add_claims_to_access_token(projects):
+        return {'prj': projects}
+
+    yield {
+        create_access_token(identity=[1, 2]): [1, 2],
+        create_access_token(identity=[4]): [4],
+    }
