@@ -67,7 +67,6 @@ medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
 
 @jwt.claims_verification_loader
 def project_claims_verification(claims):
-    app.logger.debug({'claims': claims})
     return api.payload is None or ('prj' in claims and api.payload['project_id'] in claims['prj'])
 
 

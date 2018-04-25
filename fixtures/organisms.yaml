@@ -5,3 +5,5 @@
   name: "Saccharomyces cerevisiae"
 - project_id: 4
   name: "Chinese hamster"
+- project_id: 1
+  name: "Human"

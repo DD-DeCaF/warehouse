@@ -21,3 +21,12 @@
     - 5.8
     - 1.6
     - 0.75
+- project_id: 1
+  name: "another proprietary medium"
+  ph: 50.8
+  compounds:
+    - 6
+    - 1
+  mass_concentrations:
+    - 67.9
+    - 0.7

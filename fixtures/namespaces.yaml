@@ -7,3 +7,5 @@
   name: "Metanetx"
 - project_id: 4
   name: "Internal"
+- project_id: 1
+  name: "Internal other"

@@ -24,3 +24,8 @@
   namespace_id: 4
   reference: "12345"
   type_id: 2
+- project_id: 1
+  name: "Diprivatin"
+  namespace_id: 5
+  reference: "09876"
+  type_id: 2

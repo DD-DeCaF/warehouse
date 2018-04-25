@@ -20,6 +20,10 @@ from warehouse.app import app, api, db, jwt
 
 def filter_by_jwt_claims(model):
     projects = get_jwt_claims().get('prj', [])
+    return filter_by_projects(model, projects)
+
+
+def filter_by_projects(model, projects):
     return model.query.filter(model.project_id.in_(projects) | model.project_id.is_(None))
 
 

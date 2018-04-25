@@ -3,3 +3,7 @@
   name: "mmol/(g*h)"
 - project_id: null
   name: "mmol/mmol"
+- project_id: 1
+  name: "secret unit"
+- project_id: 4
+  name: "new secret unit"
