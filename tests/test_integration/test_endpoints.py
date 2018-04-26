@@ -29,13 +29,14 @@ ENDPOINTS = [
     '/media',
 ]
 
+
 POST_SIMPLE = [
-    ('/strains', {}),
-    ('/units', {}),
-    ('/bioentities', {}),
-    ('/namespaces', {}),
-    ('/organisms', {}),
-    ('/types', {}),
+    ('/units', {'name': 'mmol'}),
+    ('/namespaces', {'name': 'new namespace'}),
+    ('/organisms', {'name': 'mouse'}),
+    ('/types', {'name': 'protein'}),
+    ('/strains', {'name': 'strain', 'genotype': '', 'parent_id': None, 'organism_id': 1}),
+    ('/bioentities', {'name': 'reaction1', 'namespace_id': 1, 'reference': '666', 'type_id': 1}),
 ]
 
 
@@ -86,17 +87,37 @@ def test_get_one(client, tokens, endpoint):
         assert resp.status_code == 404
 
 
-@mark.parametrize('endpoint', ENDPOINTS)
-def test_post(client, tokens, endpoint):
-    """When all the objects are queried without token, only public data are returned.
-    If the token is used, the data for the corresponding projects are returned along with the public data."""
-    resp = client.get(endpoint)
-    assert resp.status_code == 200
-    assert resp.content_type == 'application/json'
-    results = json.loads(resp.get_data())
-    assert set([i['project_id'] for i in results]) == {None}
-    for token, projects in tokens.items():
-        resp = client.get(endpoint, headers={'Authorization': 'Bearer {}'.format(token)})
-        assert resp.status_code == 200
-        results = json.loads(resp.get_data())
-        assert set([i['project_id'] for i in results]) <= set(projects + [None])
+@mark.parametrize('pair', POST_SIMPLE)
+def test_post_and_delete(client, tokens, pair):
+    """POST request can only be made by an authorised user with the valid project id.
+    Objects with empty project id cannot be created."""
+    endpoint, new_object = pair
+    resp = client.post(endpoint, data=json.dumps(new_object), headers={
+                'Content-Type': 'application/json'
+            })
+    assert resp.status_code == 401
+    projects1, projects2 = tuple(tokens.values())
+    for project_id in projects1 + projects2 + [None]:
+        for token, projects in tokens.items():
+            headers = {
+                'Authorization': 'Bearer {}'.format(token),
+                'Content-Type': 'application/json'
+            }
+            new_object['project_id'] = project_id
+            resp = client.post(endpoint, data=json.dumps(new_object), headers=headers)
+            new_object.pop('project_id')
+            if project_id not in projects or project_id is None:
+                assert resp.status_code == 400
+            else:
+                assert resp.status_code == 200
+                result = json.loads(resp.get_data())
+                assert {k: v for k, v in result.items() if k not in ['id', 'project_id']} == new_object
+                headers.pop('Content-Type')
+                count = get_count(client, endpoint, headers)
+                resp = client.delete(endpoint + '/{}'.format(result['id']), headers=headers)
+                assert resp.status_code == 200
+                assert get_count(client, endpoint, headers) + 1 == count
+
+
+def get_count(client, endpoint, headers):
+    return len(json.loads(client.get(endpoint, headers=headers).get_data()))

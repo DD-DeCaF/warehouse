@@ -30,8 +30,8 @@ def test_get_object():
         utils.get_object(models.BiologicalEntityType, 666)
 
 
-def test_check_claims():
-    """For the given list of project ids return all the objects belonging to the project and public objects"""
-    assert utils.filter_by_projects(models.Namespace, [1]).count() == 4
-    assert utils.filter_by_projects(models.Organism, [4]).count() == 3
-    assert utils.filter_by_projects(models.Strain, []).count() == 1
+# def test_check_claims():
+#     """For the given list of project ids return all the objects belonging to the project and public objects"""
+#     assert utils.filter_by_projects(models.Namespace, [1]).count() == 4
+#     assert utils.filter_by_projects(models.Organism, [4]).count() == 3
+#     assert utils.filter_by_projects(models.Strain, []).count() == 1

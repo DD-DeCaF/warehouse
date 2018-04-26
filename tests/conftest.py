@@ -25,6 +25,10 @@ from warehouse.app import app as app_
 from warehouse.app import init_app
 
 
+PROJECTS1 = [1, 2]
+PROJECTS2 = [4]
+
+
 @pytest.fixture(scope="session")
 def app():
     """Provide an initialized Flask for use in certain test cases."""
@@ -47,6 +51,6 @@ def tokens(app):
         return {'prj': projects}
 
     yield {
-        create_access_token(identity=[1, 2]): [1, 2],
-        create_access_token(identity=[4]): [4],
+        create_access_token(identity=PROJECTS1): PROJECTS1,
+        create_access_token(identity=PROJECTS2): PROJECTS2,
     }

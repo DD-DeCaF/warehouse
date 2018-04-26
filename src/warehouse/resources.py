@@ -139,7 +139,7 @@ BiologicalEntityList, BiologicalEntities = crud_class_factory(
 )
 
 
-# TODO: find out if the speed is the issue
+# TODO: find out if the speed is an issue
 def query_compounds(query):
     return query.join(BiologicalEntity.type).filter(BiologicalEntityType.name == 'compound')
 

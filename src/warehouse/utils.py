@@ -45,9 +45,7 @@ class CRUD(object):
 
     @classmethod
     def post(cls, model):
-        app.logger.debug(api.payload)
         obj = model(**api.payload)
-        app.logger.debug(obj)
         db.session.add(obj)
         db.session.commit()
         return obj
