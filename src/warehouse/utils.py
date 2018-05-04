@@ -14,7 +14,7 @@
 # limitations under the License.
 
 from flask_jwt_extended import get_jwt_claims
-
+from sqlalchemy import exc
 from warehouse.app import app, api, db, jwt
 
 
@@ -34,6 +34,14 @@ def get_object(model, object_id):
     return obj
 
 
+def constraint_check(db):
+    try:
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        api.abort(409, "Wrong data")
+
+
 class CRUD(object):
     @classmethod
     def get_query(cls, model):
@@ -45,10 +53,12 @@ class CRUD(object):
 
     @classmethod
     def post(cls, model, check_permissions=None):
-        obj = model()
+        if 'project_id' not in api.payload or api.payload['project_id'] is None:
+            api.abort(400, 'Project ID is not set')
+        obj = model(project_id=api.payload['project_id'])
         cls.modify_object(obj, check_permissions=check_permissions)
         db.session.add(obj)
-        db.session.commit()
+        constraint_check(db)
         return obj
 
     @classmethod
@@ -59,14 +69,14 @@ class CRUD(object):
     def delete(cls, model, id):
         obj = get_object(model, id)
         db.session.delete(obj)
-        db.session.commit()
+        constraint_check(db)
 
     @classmethod
     def put(cls, model, id, check_permissions=None):
         obj = get_object(model, id)
         cls.modify_object(obj, check_permissions=check_permissions)
         db.session.merge(obj)
-        db.session.commit()
+        constraint_check(db)
         return obj
 
     @classmethod

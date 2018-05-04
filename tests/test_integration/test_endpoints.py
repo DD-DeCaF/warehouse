@@ -16,6 +16,7 @@
 """Test expected functioning of the OpenAPI docs endpoints."""
 
 import json
+from copy import copy
 from pytest import mark
 
 
@@ -40,6 +41,20 @@ POST_SIMPLE = [
     ('/strains', {'name': 'strain', 'genotype': '', 'parent_id': None, 'organism_id': 1}),
     ('/bioentities', {'name': 'reaction1', 'namespace_id': 1, 'reference': '666', 'type_id': 1}),
 ]
+
+
+def get_headers(token, no_json=False):
+    result = {
+        'Authorization': 'Bearer {}'.format(token),
+    }
+    if no_json:
+        return result
+    result['Content-Type'] = 'application/json'
+    return result
+
+
+def get_count(client, endpoint, headers):
+    return len(json.loads(client.get(endpoint, headers=headers).get_data()))
 
 
 def test_docs(client):
@@ -93,43 +108,56 @@ def test_get_one(client, tokens, endpoint):
 def test_post_put_delete(client, tokens, pair):
     """POST request can only be made by an authorised user with the valid project id.
     Objects with empty project id cannot be created."""
-    endpoint, new_object = pair
-    resp = client.post(endpoint, data=json.dumps(new_object), headers={
+    endpoint, new_obj = pair
+    resp = client.post(endpoint, data=json.dumps(new_obj), headers={
                 'Content-Type': 'application/json'
             })
     assert resp.status_code == 401
     projects1, projects2 = tuple(tokens.values())
     for project_id in projects1 + projects2 + [None]:
         for token, projects in tokens.items():
-            headers = {
-                'Authorization': 'Bearer {}'.format(token),
-                'Content-Type': 'application/json'
-            }
+            new_object = copy(new_obj)
+            headers = get_headers(token)
             new_object['project_id'] = project_id
             resp = client.post(endpoint, data=json.dumps(new_object), headers=headers)
-            new_object.pop('project_id')
             if project_id not in projects or project_id is None:
                 assert resp.status_code == 400
             else:
                 assert resp.status_code == 200
                 result = json.loads(resp.get_data())
-                assert {k: v for k, v in result.items() if k not in ['id', 'project_id']} == new_object
+                assert {k: v for k, v in result.items() if k not in ['id']} == new_object
                 new_object['name'] = 'PUT'
                 resp = client.put(endpoint + '/{}'.format(result['id']), data=json.dumps(new_object), headers=headers)
                 assert resp.status_code == 200
                 result = json.loads(resp.get_data())
                 assert result['name'] == new_object['name']
-                headers.pop('Content-Type')
+                content_type = headers.pop('Content-Type')
                 count = get_count(client, endpoint, headers)
                 resp = client.delete(endpoint + '/{}'.format(result['id']), headers=headers)
                 assert resp.status_code == 200
                 assert get_count(client, endpoint, headers) + 1 == count
+                new_object.pop('name')
+                headers['Content-Type'] = content_type
+                resp = client.post(endpoint, data=json.dumps(new_object), headers=headers)
+                assert resp.status_code == 409
 
 
-# def test_cross_project(client, tokens):
-#     projects1, projects2 = tuple(tokens.values())
-#
+def test_cross_project(client, tokens):
+    """If the modified object is linked to other objects, project IDs should correspond."""
+    token1, token2 = tuple(tokens.keys())
+    projects1, projects2 = tokens[token1], tokens[token2]
+    headers = get_headers(token1, no_json=True)
+    organisms1 = json.loads(client.get('/organisms', headers=headers).get_data())
+    organism_id1 = [o for o in organisms1 if o['project_id'] is not None][0]['id']
+    data = {'name': 'strain', 'genotype': '', 'parent_id': None, 'organism_id': organism_id1}
+    headers = get_headers(token1)
+    resp = client.post('/strains', data=json.dumps(data), headers=headers)
+    assert resp.status_code == 400  # nobody can create entities with empty project id
+    data['project_id'] = projects1[0]
+    resp = client.post('/strains', data=json.dumps(data), headers=headers)
+    assert resp.status_code == 200
+    data['project_id'] = projects2[0]
+    headers = get_headers(token2)
+    resp = client.post('/strains', data=json.dumps(data), headers=headers)
+    assert resp.status_code == 404  # no access to the project the linked object belongs to
 
-
-def get_count(client, endpoint, headers):
-    return len(json.loads(client.get(endpoint, headers=headers).get_data()))
