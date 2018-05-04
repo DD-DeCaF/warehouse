@@ -33,7 +33,7 @@ class Strain(db.Model):
 
     genotype = db.Column(db.Text())
 
-    organism_id = db.Column(db.Integer, db.ForeignKey('organism.id'))
+    organism_id = db.Column(db.Integer, db.ForeignKey('organism.id'), nullable=False)
     organism = db.relationship(Organism)
 
 
@@ -71,12 +71,12 @@ class BiologicalEntity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
 
-    namespace_id = db.Column(db.Integer, db.ForeignKey('namespace.id'))
+    namespace_id = db.Column(db.Integer, db.ForeignKey('namespace.id'), nullable=False)
     namespace = db.relationship(Namespace)
 
     reference = db.Column(db.String(256), nullable=False)
 
-    type_id = db.Column(db.Integer, db.ForeignKey('biological_entity_type.id'))
+    type_id = db.Column(db.Integer, db.ForeignKey('biological_entity_type.id'), nullable=False)
     type = db.relationship(BiologicalEntityType)
 
 
@@ -98,3 +98,53 @@ class Unit(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
+
+
+class Experiment(db.Model):
+    project_id = db.Column(db.Integer)
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
+
+    description = db.Column(db.Text(), nullable=False)
+
+
+# TODO: tags
+# TODO: info to put to columns (protocol, temperature, gas etc)
+class Sample(db.Model):
+    experiment_id = db.Column(db.Integer, db.ForeignKey('experiment.id'), nullable=False)
+    experiment = db.relationship(Experiment)
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
+
+    protocol = db.Column(db.String(256))
+    temperature = db.Column(db.Float, nullable=False)
+    gas = db.Column(db.String(256), nullable=False)  # TODO: enum for gases
+
+    strain_id = db.Column(db.Integer, db.ForeignKey('strain.id'), nullable=False)
+    strain = db.relationship(Strain)
+
+    medium_id = db.Column(db.Integer, db.ForeignKey('medium.id'), nullable=False)
+    medium = db.relationship(Medium)
+
+
+class Measurement(db.Model):
+    sample_id = db.Column(db.Integer, db.ForeignKey('sample.id'), nullable=False)
+    sample = db.relationship(Sample)
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    datetime_start = db.Column(db.DateTime, nullable=False)
+    datetime_end = db.Column(db.DateTime)
+
+    numerator_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'), nullable=False)
+    numerator = db.relationship(BiologicalEntity, foreign_keys=[numerator_id])
+
+    denominator_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'), nullable=False)
+    denominator = db.relationship(BiologicalEntity, foreign_keys=[denominator_id])
+
+    value = db.Column(db.Float, nullable=False)
+
+    unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'), nullable=False)
+    unit = db.relationship(Unit)

@@ -27,6 +27,7 @@ ENDPOINTS = [
     '/organisms',
     '/types',
     '/media',
+    '/experiments',
 ]
 
 
@@ -35,6 +36,7 @@ POST_SIMPLE = [
     ('/namespaces', {'name': 'new namespace'}),
     ('/organisms', {'name': 'mouse'}),
     ('/types', {'name': 'protein'}),
+    ('/experiments', {'name': 'new one', 'description': 'the best experiment'}),
     ('/strains', {'name': 'strain', 'genotype': '', 'parent_id': None, 'organism_id': 1}),
     ('/bioentities', {'name': 'reaction1', 'namespace_id': 1, 'reference': '666', 'type_id': 1}),
 ]
@@ -122,6 +124,11 @@ def test_post_put_delete(client, tokens, pair):
                 resp = client.delete(endpoint + '/{}'.format(result['id']), headers=headers)
                 assert resp.status_code == 200
                 assert get_count(client, endpoint, headers) + 1 == count
+
+
+# def test_cross_project(client, tokens):
+#     projects1, projects2 = tuple(tokens.values())
+#
 
 
 def get_count(client, endpoint, headers):

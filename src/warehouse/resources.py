@@ -18,7 +18,8 @@ from flask_restplus import Resource, fields, marshal_with_field
 from flask_jwt_extended import jwt_required, jwt_optional, create_access_token, get_jwt_claims
 
 from warehouse.app import app, api, db, jwt
-from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit
+from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit, \
+    Experiment
 from warehouse.utils import CRUD, filter_by_jwt_claims
 
 
@@ -32,6 +33,10 @@ organism_schema = api.model('Organism', base_schema)
 namespace_schema = api.model('Namespace', base_schema)
 type_schema = api.model('BiologicalEntityType', base_schema)
 unit_schema = api.model('UnitType', base_schema)
+
+experiment_schema = api.model('Experiment', {**base_schema, **{
+    'description': fields.String,
+}})
 
 strain_schema = api.model('Strain', {**base_schema, **{
     'parent_id': fields.Integer,
@@ -129,6 +134,7 @@ OrganismList, Organisms = crud_class_factory(Organism, '/organisms', organism_sc
 NamespaceList, Namespaces = crud_class_factory(Namespace, '/namespaces', namespace_schema, 'namespace')
 TypeList, Types = crud_class_factory(BiologicalEntityType, '/types', type_schema, 'biological entity type')
 UnitList, Units = crud_class_factory(Unit, '/units', unit_schema, 'unit')
+ExperimentList, Experiments = crud_class_factory(Experiment, '/experiments', experiment_schema, 'experiment')
 StrainList, Strains = crud_class_factory(
     Strain,
     '/strains',
