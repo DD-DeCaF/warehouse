@@ -54,7 +54,7 @@ class CRUD(object):
     @classmethod
     def post(cls, model, check_permissions=None):
         if 'project_id' not in api.payload or api.payload['project_id'] is None:
-            api.abort(400, 'Project ID is not set')
+            api.abort(403, 'Project ID is not set')
         obj = model(project_id=api.payload['project_id'])
         cls.modify_object(obj, check_permissions=check_permissions)
         db.session.add(obj)

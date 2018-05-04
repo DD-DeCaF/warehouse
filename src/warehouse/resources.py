@@ -20,7 +20,7 @@ from flask_jwt_extended import jwt_required, jwt_optional, create_access_token, 
 from warehouse.app import app, api, db, jwt
 from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit, \
     Experiment
-from warehouse.utils import CRUD, filter_by_jwt_claims
+from warehouse.utils import CRUD, filter_by_jwt_claims, constraint_check
 
 
 base_schema = {
@@ -72,7 +72,7 @@ medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
 
 @jwt.claims_verification_loader
 def project_claims_verification(claims):
-    return api.payload is None or 'project_id' not in api.payload or ('prj' in claims and api.payload['project_id'] in claims['prj'])
+    return api.payload is None or ('project_id' not in api.payload) or ('prj' in claims and api.payload['project_id'] in claims['prj'])
 
 
 def crud_class_factory(model, route, schema, name, name_plural=None, check_permissions=None):
@@ -94,6 +94,9 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
             """List all the {}"""
             return CRUD.get(model)
 
+        @api.response(403, 'Forbidden')
+        @api.response(404, 'Not Found')
+        @api.response(409, 'Constraint is not satisfied')
         @api.marshal_with(schema)
         @api.expect(schema)
         @jwt_required
@@ -103,7 +106,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
             return CRUD.post(model, check_permissions=check_permissions)
 
     @api.route(route + '/<int:id>')
-    @api.response(404, 'Not found')
+    @api.response(404, 'Not Found')
     @api.param('id', 'The identifier')
     class Item(Resource):
         @api.marshal_with(schema)
@@ -113,12 +116,15 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
             """Get the {} by id"""
             return CRUD.get_by_id(model, id)
 
+        @api.response(403, 'Forbidden')
         @jwt_required
         @docstring(name)
         def delete(self, id):
             """Delete the {} by id"""
             CRUD.delete(model, id)
 
+        @api.response(403, 'Forbidden')
+        @api.response(409, 'Constraint is not satisfied')
         @api.marshal_with(schema)
         @api.expect(schema)
         @jwt_required
@@ -206,7 +212,7 @@ def set_compounds_from_payload(medium):
     db.session.flush()
     for c in medium.composition:
         c.mass_concentration = compound_dict[c.compound_id]
-    db.session.commit()
+    constraint_check(db)
 
 
 @api.route('/media')
@@ -235,7 +241,7 @@ class MediaList(Resource):
         try:
             set_compounds_from_payload(medium)
         except NotCompound:
-            api.abort(400, "All the biological entities have to be compounds")
+            api.abort(404, "No such compounds found")
         return serialized_medium_with_mass_concentrations(medium)
 
 
@@ -263,5 +269,5 @@ class Media(Resource):
         try:
             set_compounds_from_payload(medium)
         except NotCompound:
-            api.abort(400, "All the biological entities have to be compounds")
+            api.abort(404, "No such compounds found")
         return serialized_medium_with_mass_concentrations(medium)

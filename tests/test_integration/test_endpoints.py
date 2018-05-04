@@ -120,8 +120,10 @@ def test_post_put_delete(client, tokens, pair):
             headers = get_headers(token)
             new_object['project_id'] = project_id
             resp = client.post(endpoint, data=json.dumps(new_object), headers=headers)
-            if project_id not in projects or project_id is None:
+            if project_id not in projects:
                 assert resp.status_code == 400
+            elif project_id is None:
+                assert resp.status_code == 403
             else:
                 assert resp.status_code == 200
                 result = json.loads(resp.get_data())
@@ -142,7 +144,7 @@ def test_post_put_delete(client, tokens, pair):
                 assert resp.status_code == 409
 
 
-def test_cross_project(client, tokens):
+def test_cross_project_strain(client, tokens):
     """If the modified object is linked to other objects, project IDs should correspond."""
     token1, token2 = tuple(tokens.keys())
     projects1, projects2 = tokens[token1], tokens[token2]
@@ -152,7 +154,7 @@ def test_cross_project(client, tokens):
     data = {'name': 'strain', 'genotype': '', 'parent_id': None, 'organism_id': organism_id1}
     headers = get_headers(token1)
     resp = client.post('/strains', data=json.dumps(data), headers=headers)
-    assert resp.status_code == 400  # nobody can create entities with empty project id
+    assert resp.status_code == 403  # nobody can create entities with empty project id
     data['project_id'] = projects1[0]
     resp = client.post('/strains', data=json.dumps(data), headers=headers)
     assert resp.status_code == 200
