@@ -44,8 +44,9 @@ class CRUD(object):
         return cls.get_query(model).all()
 
     @classmethod
-    def post(cls, model):
-        obj = model(**api.payload)
+    def post(cls, model, check_permissions=None):
+        obj = model()
+        cls.modify_object(obj, check_permissions=check_permissions)
         db.session.add(obj)
         db.session.commit()
         return obj
@@ -61,10 +62,19 @@ class CRUD(object):
         db.session.commit()
 
     @classmethod
-    def put(cls, model, id):
+    def put(cls, model, id, check_permissions=None):
         obj = get_object(model, id)
-        for field in api.payload:
-            if field != 'id' and field != 'project_id':
-                obj[field] = api.payload[field]
+        cls.modify_object(obj, check_permissions=check_permissions)
         db.session.merge(obj)
         db.session.commit()
+        return obj
+
+    @classmethod
+    def modify_object(cls, obj, check_permissions=None):
+        if check_permissions is None:
+            check_permissions = {}
+        for field, new_value in api.payload.items():
+            if new_value is not None and field in check_permissions:
+                get_object(check_permissions[field], new_value)
+            if field != 'id' and field != 'project_id':
+                setattr(obj, field, new_value)

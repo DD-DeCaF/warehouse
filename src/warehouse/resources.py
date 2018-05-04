@@ -67,10 +67,10 @@ medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
 
 @jwt.claims_verification_loader
 def project_claims_verification(claims):
-    return api.payload is None or ('prj' in claims and api.payload['project_id'] in claims['prj'])
+    return api.payload is None or 'project_id' not in api.payload or ('prj' in claims and api.payload['project_id'] in claims['prj'])
 
 
-def crud_class_factory(model, route, schema, name, name_plural=None):
+def crud_class_factory(model, route, schema, name, name_plural=None, check_permissions=None):
     if name_plural is None:
         name_plural = name + 's'
 
@@ -95,7 +95,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None):
         @docstring(name)
         def post(self):
             """Create a {}"""
-            return CRUD.post(model)
+            return CRUD.post(model, check_permissions=check_permissions)
 
     @api.route(route + '/<int:id>')
     @api.response(404, 'Not found')
@@ -120,22 +120,29 @@ def crud_class_factory(model, route, schema, name, name_plural=None):
         @docstring(name)
         def put(self, id):
             """Update the {} by id"""
-            return CRUD.put(model, id)
+            return CRUD.put(model, id, check_permissions=check_permissions)
 
     return List, Item
 
 
 OrganismList, Organisms = crud_class_factory(Organism, '/organisms', organism_schema, 'organism')
-StrainList, Strains = crud_class_factory(Strain, '/strains', strain_schema, 'strain')
 NamespaceList, Namespaces = crud_class_factory(Namespace, '/namespaces', namespace_schema, 'namespace')
 TypeList, Types = crud_class_factory(BiologicalEntityType, '/types', type_schema, 'biological entity type')
 UnitList, Units = crud_class_factory(Unit, '/units', unit_schema, 'unit')
+StrainList, Strains = crud_class_factory(
+    Strain,
+    '/strains',
+    strain_schema,
+    'strain',
+    check_permissions={'parent_id': Strain, 'organism_id': Organism},
+)
 BiologicalEntityList, BiologicalEntities = crud_class_factory(
     BiologicalEntity,
     '/bioentities',
     biological_entity_schema,
     'biological entity',
     'biological entities',
+    check_permissions={'namespace_id': Namespace, 'type_id': BiologicalEntityType},
 )
 
 

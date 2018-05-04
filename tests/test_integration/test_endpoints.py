@@ -88,7 +88,7 @@ def test_get_one(client, tokens, endpoint):
 
 
 @mark.parametrize('pair', POST_SIMPLE)
-def test_post_and_delete(client, tokens, pair):
+def test_post_put_delete(client, tokens, pair):
     """POST request can only be made by an authorised user with the valid project id.
     Objects with empty project id cannot be created."""
     endpoint, new_object = pair
@@ -112,6 +112,11 @@ def test_post_and_delete(client, tokens, pair):
                 assert resp.status_code == 200
                 result = json.loads(resp.get_data())
                 assert {k: v for k, v in result.items() if k not in ['id', 'project_id']} == new_object
+                new_object['name'] = 'PUT'
+                resp = client.put(endpoint + '/{}'.format(result['id']), data=json.dumps(new_object), headers=headers)
+                assert resp.status_code == 200
+                result = json.loads(resp.get_data())
+                assert result['name'] == new_object['name']
                 headers.pop('Content-Type')
                 count = get_count(client, endpoint, headers)
                 resp = client.delete(endpoint + '/{}'.format(result['id']), headers=headers)
