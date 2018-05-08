@@ -113,7 +113,7 @@ class Experiment(db.Model):
 # TODO: info to put to columns (protocol, temperature, gas etc)
 class Sample(db.Model):
     experiment_id = db.Column(db.Integer, db.ForeignKey('experiment.id'), nullable=False)
-    experiment = db.relationship(Experiment)
+    experiment = db.relationship(Experiment, backref=db.backref('samples', cascade="all, delete-orphan", lazy='dynamic'))
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
@@ -131,7 +131,7 @@ class Sample(db.Model):
 
 class Measurement(db.Model):
     sample_id = db.Column(db.Integer, db.ForeignKey('sample.id'), nullable=False)
-    sample = db.relationship(Sample)
+    sample = db.relationship(Sample, backref=db.backref('measurements', cascade="all, delete-orphan", lazy='dynamic'))
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -141,7 +141,7 @@ class Measurement(db.Model):
     numerator_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'), nullable=False)
     numerator = db.relationship(BiologicalEntity, foreign_keys=[numerator_id])
 
-    denominator_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'), nullable=False)
+    denominator_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'))
     denominator = db.relationship(BiologicalEntity, foreign_keys=[denominator_id])
 
     value = db.Column(db.Float, nullable=False)

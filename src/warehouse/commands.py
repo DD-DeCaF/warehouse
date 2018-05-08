@@ -16,7 +16,7 @@ import yaml
 from flask_script import Manager
 
 from warehouse.app import db, app
-from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit, Experiment
+from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit, Experiment, Sample, Measurement
 
 
 Fixtures = Manager(usage="Populate the database with fixtures")
@@ -68,6 +68,16 @@ def experiments(filepath='fixtures/experiments.yaml'):
 
 
 @Fixtures.command
+def samples(filepath='fixtures/samples.yaml'):
+    add_from_file(filepath, Sample)
+
+
+@Fixtures.command
+def measurements(filepath='fixtures/measurements.yaml'):
+    add_from_file(filepath, Measurement)
+
+
+@Fixtures.command
 def media(filepath='fixtures/media.yaml'):
     objects = yaml.load(open(filepath, 'r'))
     for obj in objects:
@@ -93,9 +103,10 @@ def populate():
     units()
     types()
     namespaces()
-    experiments()
     biological_entities()
     media()
     organisms()
     strains()
-
+    experiments()
+    samples()
+    measurements()

@@ -1,0 +1,29 @@
+---
+- experiment_id: 2
+  name: "public sample"
+  protocol: "some protocol"
+  temperature: 38.5
+  gas: "oxygen"
+  strain_id: 1
+  medium_id: 1
+- experiment_id: 2
+  name: "another public sample"
+  protocol: "different protocol"
+  temperature: 15
+  gas: "co2"
+  strain_id: 1
+  medium_id: 1
+- experiment_id: 1
+  name: "fluxomics sample"
+  protocol: "protocol1"
+  temperature: 20.11
+  gas: "co2"
+  strain_id: 1
+  medium_id: 3
+- experiment_id: 3
+  name: "sample"
+  protocol: "protocol3"
+  temperature: 11
+  gas: "oxygen and co2"
+  strain_id: 3
+  medium_id: 2

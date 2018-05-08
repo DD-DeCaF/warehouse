@@ -19,7 +19,7 @@ from flask_jwt_extended import jwt_required, jwt_optional, create_access_token, 
 
 from warehouse.app import app, api, db, jwt
 from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit, \
-    Experiment
+    Experiment, Sample, Measurement
 from warehouse.utils import CRUD, filter_by_jwt_claims, constraint_check
 
 
@@ -68,6 +68,26 @@ medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
     'ph': fields.Float,
     'compounds': fields.List(fields.Nested(medium_compound_simple_schema)),
 }})
+
+sample_schema = api.model('Sample', {
+    'experiment_id': fields.Integer,
+    'name': fields.String,
+    'protocol': fields.String,
+    'temperature': fields.Float,
+    'gas': fields.String,
+    'strain_id': fields.Integer,
+    'medium_id': fields.Integer,
+})
+
+measurement_schema = api.model('Measurement', {
+    'sample_id': fields.Integer,
+    'datetime_start': fields.DateTime,
+    'datetime_end': fields.DateTime,
+    'numerator_id': fields.Integer,
+    'denominator_id': fields.Integer,
+    'value': fields.Float,
+    'unit_id': fields.Integer,
+})
 
 
 @jwt.claims_verification_loader
@@ -241,7 +261,7 @@ class MediaList(Resource):
         try:
             set_compounds_from_payload(medium)
         except NotCompound:
-            api.abort(404, "No such compounds found")
+            api.abort(404, "No such compound")
         return serialized_medium_with_mass_concentrations(medium)
 
 
@@ -269,5 +289,27 @@ class Media(Resource):
         try:
             set_compounds_from_payload(medium)
         except NotCompound:
-            api.abort(404, "No such compounds found")
+            api.abort(404, "No such compound")
         return serialized_medium_with_mass_concentrations(medium)
+
+
+@api.route('/experiments/<int:experiment_id>/samples')
+class ExperimentSampleList(Resource):
+    @api.marshal_with(sample_schema)
+    @jwt_optional
+    def get(self, experiment_id):
+        """List all the samples for the given experiment"""
+        return CRUD.get_by_id(Experiment, experiment_id).samples.all()
+
+
+@api.route('/samples/<int:sample_id>/measurements')
+class SampleMeasurementList(Resource):
+    @api.marshal_with(measurement_schema)
+    @jwt_optional
+    def get(self, sample_id):
+        """List all the samples for the given experiment"""
+        sample = Sample.query.get(sample_id)
+        query = filter_by_jwt_claims(Experiment).filter_by(id=sample.experiment.id)
+        if sample is None or not query.count():
+            api.abort(404, "No such sample")
+        return sample.measurements.all()

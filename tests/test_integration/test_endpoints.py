@@ -163,3 +163,7 @@ def test_cross_project_strain(client, tokens):
     resp = client.post('/strains', data=json.dumps(data), headers=headers)
     assert resp.status_code == 404  # no access to the project the linked object belongs to
 
+
+def test_medium(client, tokens):
+    """"""
+    pass
