@@ -16,6 +16,7 @@
 from flask_jwt_extended import get_jwt_claims
 from sqlalchemy import exc
 from warehouse.app import app, api, db, jwt
+from warehouse.models import Sample, Experiment, Measurement
 
 
 def filter_by_jwt_claims(model):
@@ -42,6 +43,26 @@ def constraint_check(db):
         api.abort(409, "Wrong data")
 
 
+def get_sample_by_id(sample_id):
+    sample = Sample.query.get(sample_id)
+    if sample is None:
+        api.abort(404, "No such sample")
+    query = filter_by_jwt_claims(Experiment).filter_by(id=sample.experiment.id)
+    if not query.count():
+        api.abort(404, "No such sample")
+    return sample
+
+
+def get_measurement_by_id(measurement_id):
+    measurement = Measurement.query.get(measurement_id)
+    if measurement is None:
+        api.abort(404, "No such measurement")
+    query = filter_by_jwt_claims(Experiment).filter_by(id=measurement.sample.experiment.id)
+    if not query.count():
+        api.abort(404, "No such measurement")
+    return measurement
+
+
 class CRUD(object):
     @classmethod
     def get_query(cls, model):
@@ -52,10 +73,14 @@ class CRUD(object):
         return cls.get_query(model).all()
 
     @classmethod
-    def post(cls, model, check_permissions=None):
-        if 'project_id' not in api.payload or api.payload['project_id'] is None:
-            api.abort(403, 'Project ID is not set')
-        obj = model(project_id=api.payload['project_id'])
+    def post(cls, model, check_permissions=None, project_id=True):
+        if project_id:
+            if api.payload.get('project_id', None) is None:
+                api.abort(403, 'Project ID is not set')
+            else:
+                obj = model(project_id=api.payload['project_id'])
+        else:
+            obj = model()
         cls.modify_object(obj, check_permissions=check_permissions)
         db.session.add(obj)
         constraint_check(db)
@@ -84,7 +109,10 @@ class CRUD(object):
         if check_permissions is None:
             check_permissions = {}
         for field, new_value in api.payload.items():
-            if new_value is not None and field in check_permissions:
-                get_object(check_permissions[field], new_value)
+            if field in check_permissions and new_value is not None:
+                if field == 'sample_id':
+                    get_sample_by_id(new_value)
+                else:
+                    get_object(check_permissions[field], new_value)
             if field != 'id' and field != 'project_id':
                 setattr(obj, field, new_value)

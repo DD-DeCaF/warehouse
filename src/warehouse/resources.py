@@ -20,7 +20,7 @@ from flask_jwt_extended import jwt_required, jwt_optional, create_access_token, 
 from warehouse.app import app, api, db, jwt
 from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit, \
     Experiment, Sample, Measurement
-from warehouse.utils import CRUD, filter_by_jwt_claims, constraint_check
+from warehouse.utils import CRUD, filter_by_jwt_claims, constraint_check, get_sample_by_id, get_measurement_by_id
 
 
 base_schema = {
@@ -294,12 +294,61 @@ class Media(Resource):
 
 
 @api.route('/experiments/<int:experiment_id>/samples')
+@api.response(404, 'Not found')
+@api.param('experiment_id', 'The experiment identifier')
 class ExperimentSampleList(Resource):
     @api.marshal_with(sample_schema)
     @jwt_optional
     def get(self, experiment_id):
         """List all the samples for the given experiment"""
         return CRUD.get_by_id(Experiment, experiment_id).samples.all()
+
+    @api.marshal_with(sample_schema)
+    @api.expect(sample_schema)
+    @jwt_required
+    def post(self, experiment_id):
+        """Create a sample"""
+        experiment = CRUD.get_by_id(Experiment, experiment_id)
+        sample = CRUD.post(Sample, check_permissions={
+            'strain_id': Strain,
+            'medium_id': Medium,
+            'experiment_id': Experiment
+        }, project_id=False)
+        sample.experiment = experiment
+        return sample
+
+
+@api.route('/samples/<int:id>')
+@api.response(404, 'Not found')
+@api.param('id', 'The identifier')
+class Samples(Resource):
+    @api.marshal_with(sample_schema)
+    @jwt_optional
+    def get(self, id):
+        """Get a sample by id"""
+        return get_sample_by_id(id)
+
+    @jwt_required
+    def delete(self, id):
+        """Delete a sample by id - associated measurements will be deleted as well"""
+        sample = get_sample_by_id(id)
+        db.session.delete(sample)
+        constraint_check(db)
+
+    @api.marshal_with(medium_schema)
+    @api.expect(medium_simple_schema)
+    @jwt_required
+    def put(self, id):
+        """Update a sample by id"""
+        sample = get_sample_by_id(id)
+        CRUD.modify_object(sample, check_permissions={
+            'strain_id': Strain,
+            'medium_id': Medium,
+            'experiment_id': Experiment
+        })
+        db.session.merge(sample)
+        constraint_check(db)
+        return sample
 
 
 @api.route('/samples/<int:sample_id>/measurements')
@@ -308,8 +357,54 @@ class SampleMeasurementList(Resource):
     @jwt_optional
     def get(self, sample_id):
         """List all the samples for the given experiment"""
-        sample = Sample.query.get(sample_id)
-        query = filter_by_jwt_claims(Experiment).filter_by(id=sample.experiment.id)
-        if sample is None or not query.count():
-            api.abort(404, "No such sample")
+        sample = self.get_sample_by_id(sample_id)
         return sample.measurements.all()
+
+    @api.marshal_with(measurement_schema)
+    @api.expect(measurement_schema)
+    @jwt_required
+    def post(self, sample_id):
+        """Create a sample"""
+        sample = get_sample_by_id(sample_id)
+        measurement = CRUD.post(Measurement, check_permissions={
+            'numerator_id': BiologicalEntity,
+            'denominator_id': BiologicalEntity,
+            'unit_id': Unit,
+            'sample_id': Sample,
+        }, project_id=False)
+        measurement.sample = sample
+        return measurement
+
+
+@api.route('/measurements/<int:id>')
+@api.response(404, 'Not found')
+@api.param('id', 'The identifier')
+class Measurements(Resource):
+    @api.marshal_with(measurement_schema)
+    @jwt_optional
+    def get(self, id):
+        """Get a measurement by id"""
+        return get_measurement_by_id(id)
+
+    @jwt_required
+    def delete(self, id):
+        """Delete a measurement by id"""
+        measurement = get_measurement_by_id(id)
+        db.session.delete(measurement)
+        constraint_check(db)
+
+    @api.marshal_with(measurement_schema)
+    @api.expect(measurement_schema)
+    @jwt_required
+    def put(self, id):
+        """Update a sample by id"""
+        measurement = get_measurement_by_id(id)
+        CRUD.modify_object(measurement, check_permissions={
+            'numerator_id': BiologicalEntity,
+            'denominator_id': BiologicalEntity,
+            'unit_id': Unit,
+            'sample_id': Sample,
+        })
+        db.session.merge(measurement)
+        constraint_check(db)
+        return measurement

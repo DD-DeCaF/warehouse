@@ -167,3 +167,8 @@ def test_cross_project_strain(client, tokens):
 def test_medium(client, tokens):
     """"""
     pass
+
+
+def test_sample(client, tokens):
+    """"""
+    pass
