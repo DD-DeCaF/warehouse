@@ -165,10 +165,48 @@ def test_cross_project_strain(client, tokens):
 
 
 def test_medium(client, tokens):
-    """"""
-    pass
+    """Medium endpoints"""
+    token1, token2 = tuple(tokens.keys())
+    projects1, projects2 = tokens[token1], tokens[token2]
+    headers = get_headers(token1)
+    medium_info = {'project_id': projects1[0], 'name': 'medium1', 'ph': 3}
+    compounds_permissions = [1, 2, 5]
+    compounds_missing = [1, 666, 3]
+    compounds_reactions = [3, 4, 7]
+    compounds_correct = [1, 2, 3]
+
+    def get_compounds(ids):
+        return [{'id': i, 'mass_concentration': j} for i, j in zip(ids, [0.1, 0.2, 0.3])]
+
+    medium_info['compounds'] = get_compounds(compounds_permissions)
+    resp = client.post('/media', data=json.dumps(medium_info), headers=headers)
+    assert resp.status_code == 404  # no access to the project the linked object belongs to
+
+    medium_info['compounds'] = get_compounds(compounds_missing)
+    resp = client.post('/media', data=json.dumps(medium_info), headers=headers)
+    assert resp.status_code == 404  # no such object
+
+    medium_info['compounds'] = get_compounds(compounds_reactions)
+    resp = client.post('/media', data=json.dumps(medium_info), headers=headers)
+    assert resp.status_code == 404  # not all the linked biological entities are compounds
+
+    medium_info['compounds'] = get_compounds(compounds_correct)
+    resp = client.post('/media', data=json.dumps(medium_info), headers=headers)
+    assert resp.status_code == 200
+    medium_id = json.loads(resp.get_data())['id']
+    content_type = headers.pop('Content-Type')
+    resp = client.delete('/media/{}'.format(medium_id), headers=headers)
+    assert resp.status_code == 200
+    # Check that corresponding compounds are still available
+    for compound_id in compounds_correct:
+        assert client.get('bioentities/{}'.format(compound_id), headers=headers).status_code == 200
 
 
 def test_sample(client, tokens):
-    """"""
+    """Sample endpoints"""
+    pass
+
+
+def test_measurements(client, tokens):
+    """Measurements endpoints"""
     pass

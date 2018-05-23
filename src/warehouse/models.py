@@ -85,6 +85,8 @@ class MediumCompound(db.Model):
         db.PrimaryKeyConstraint('medium_id', 'compound_id'),
     )
 
+    __mapper_args__ = {'confirm_deleted_rows': False}
+
     medium_id = db.Column(db.Integer, db.ForeignKey('medium.id'))
     compound_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'))
     mass_concentration = db.Column(db.Float)

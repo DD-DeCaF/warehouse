@@ -136,6 +136,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
             """Get the {} by id"""
             return CRUD.get_by_id(model, id)
 
+        # TODO: archive instead of delete
         @api.response(403, 'Forbidden')
         @jwt_required
         @docstring(name)
@@ -225,7 +226,7 @@ class NotCompound(Exception):
 def set_compounds_from_payload(medium):
     compound_dict = {c['id']: c['mass_concentration'] for c in api.payload['compounds']}
     entities = filter_by_jwt_claims(BiologicalEntity).filter(BiologicalEntity.id.in_(compound_dict.keys()))
-    if query_compounds(entities).count() != entities.count():
+    if entities.count() < len(api.payload['compounds']):
         raise NotCompound
     medium.compounds = entities.all()
     db.session.add(medium)
@@ -356,7 +357,7 @@ class SampleMeasurementList(Resource):
     @api.marshal_with(measurement_schema)
     @jwt_optional
     def get(self, sample_id):
-        """List all the samples for the given experiment"""
+        """List all the measurements for the given sample"""
         sample = self.get_sample_by_id(sample_id)
         return sample.measurements.all()
 
@@ -364,7 +365,7 @@ class SampleMeasurementList(Resource):
     @api.expect(measurement_schema)
     @jwt_required
     def post(self, sample_id):
-        """Create a sample"""
+        """Create a measurement for the sample"""
         sample = get_sample_by_id(sample_id)
         measurement = CRUD.post(Measurement, check_permissions={
             'numerator_id': BiologicalEntity,
@@ -397,7 +398,7 @@ class Measurements(Resource):
     @api.expect(measurement_schema)
     @jwt_required
     def put(self, id):
-        """Update a sample by id"""
+        """Update a measurement by id"""
         measurement = get_measurement_by_id(id)
         CRUD.modify_object(measurement, check_permissions={
             'numerator_id': BiologicalEntity,
