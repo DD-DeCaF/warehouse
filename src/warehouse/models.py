@@ -122,7 +122,7 @@ class Sample(db.Model):
 
     protocol = db.Column(db.String(256))
     temperature = db.Column(db.Float, nullable=False)
-    gas = db.Column(db.String(256), nullable=False)  # TODO: enum for gases
+    aerobic = db.Column(db.Boolean, nullable=False)
 
     strain_id = db.Column(db.Integer, db.ForeignKey('strain.id'), nullable=False)
     strain = db.relationship(Strain)

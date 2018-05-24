@@ -16,6 +16,8 @@
 """Test expected functioning of the OpenAPI docs endpoints."""
 
 import json
+import itertools
+import datetime
 from copy import copy
 from pytest import mark
 
@@ -168,6 +170,9 @@ def test_medium(client, tokens):
     """Medium endpoints"""
     token1, token2 = tuple(tokens.keys())
     projects1, projects2 = tokens[token1], tokens[token2]
+    if 4 in projects1:
+        token1, token2 = token2, token1
+        projects1, projects2 = projects2, projects1
     headers = get_headers(token1)
     medium_info = {'project_id': projects1[0], 'name': 'medium1', 'ph': 3}
     compounds_permissions = [1, 2, 5]
@@ -204,9 +209,87 @@ def test_medium(client, tokens):
 
 def test_sample(client, tokens):
     """Sample endpoints"""
-    pass
+    token1, token2 = tuple(tokens.keys())
+    projects1, projects2 = tokens[token1], tokens[token2]
+    if 4 in projects1:
+        token1, token2 = token2, token1
+        projects1, projects2 = projects2, projects1
+    headers = get_headers(token1)
+    sample_info = {'name': 'new', 'protocol': 'protocol', 'temperature': 38, 'aerobic': True}
+    experiment = {'correct': 1, 'permissions': 3, 'not_existing': 666}
+    medium = {'correct': 1, 'permissions': 2, 'not_existing': 666}
+    strain = {'correct': 2, 'permissions': 3, 'not_existing': 666}
+    for collection in itertools.product(experiment.items(), medium.items(), strain.items()):
+        permissions, (experiment_id, medium_id, strain_id) = list(zip(*collection))
+        sample_info['medium_id'] = medium_id
+        sample_info['strain_id'] = strain_id
+        permissions = list(set(permissions))
+        resp = client.post('/experiments/{}/samples'.format(experiment_id), data=json.dumps(sample_info), headers=headers)
+        if len(permissions) == 1 and permissions[0] == 'correct':
+            assert resp.status_code == 200
+            new_sample = json.loads(resp.get_data())
+        else:
+            assert resp.status_code == 404
+    for item in itertools.chain(
+        zip(experiment.items(), ['experiment_id']*3),
+        zip(medium.items(), ['medium_id']*3),
+        zip(strain.items(), ['strain_id']*3)
+    ):
+        (permission, value), key = item
+        resp = client.put('/samples/{}'.format(new_sample['id']), data=json.dumps({key: value}), headers=headers)
+        if permission == 'correct':
+            assert resp.status_code == 200
+        else:
+            assert resp.status_code == 404
+    content_type = headers.pop('Content-Type')
+    resp = client.get('/experiments/{}/samples'.format(new_sample['experiment_id']), headers=headers)
+    assert resp.status_code == 200
+    assert len(json.loads(resp.get_data())) > 0
+    resp = client.get('/samples/{}'.format(new_sample['id']), headers=headers)
+    assert resp.status_code == 200
+    assert json.loads(resp.get_data()) == new_sample
+    resp = client.get('/samples/666', headers=headers)
+    assert resp.status_code == 404
 
 
 def test_measurements(client, tokens):
     """Measurements endpoints"""
-    pass
+    token1, token2 = tuple(tokens.keys())
+    projects1, projects2 = tokens[token1], tokens[token2]
+    if 4 in projects1:
+        token1, token2 = token2, token1
+        projects1, projects2 = projects2, projects1
+    headers = get_headers(token1)
+    measurement_info = {
+        'datetime_start': str(datetime.datetime(2018, 1, 1, 12)),
+        'datetime_end': str(datetime.datetime(2018, 1, 1, 13)),
+        'value': 1,
+        'unit_id': 1,
+        'numerator_id': 1,
+        'denominator_id': None,
+    }
+    sample = {'correct': 3, 'permissions': 4, 'not_existing': 666}
+    for key, value in sample.items():
+        resp = client.post('/samples/{}/measurements'.format(value),
+                           data=json.dumps(measurement_info),
+                           headers=headers)
+        if key == 'correct':
+            assert resp.status_code == 200
+            obj = json.loads(resp.get_data())
+        else:
+            assert resp.status_code == 404
+    numerator = {'correct': 1, 'permissions': 5, 'not_existing': 666}
+    denominator = {'correct': None, 'permissions': 5, 'not_existing': 666}
+    for collection in itertools.product(numerator.items(), denominator.items(), sample.items()):
+        permissions, (numerator_id, denominator_id, sample_id) = list(zip(*collection))
+        permissions = list(set(permissions))
+        data = {
+            'numerator_id': numerator_id,
+            'denominator_id': denominator_id,
+            'sample_id': sample_id,
+        }
+        resp = client.put('/measurements/{}'.format(obj['id']), data=json.dumps(data), headers=headers)
+        if len(permissions) == 1 and permissions[0] == 'correct':
+            assert resp.status_code == 200
+        else:
+            assert resp.status_code == 404

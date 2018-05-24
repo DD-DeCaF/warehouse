@@ -70,16 +70,18 @@ medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
 }})
 
 sample_schema = api.model('Sample', {
+    'id': fields.Integer,
     'experiment_id': fields.Integer,
     'name': fields.String,
     'protocol': fields.String,
     'temperature': fields.Float,
-    'gas': fields.String,
+    'aerobic': fields.Boolean,
     'strain_id': fields.Integer,
     'medium_id': fields.Integer,
 })
 
 measurement_schema = api.model('Measurement', {
+    'id': fields.Integer,
     'sample_id': fields.Integer,
     'datetime_start': fields.DateTime,
     'datetime_end': fields.DateTime,
@@ -225,7 +227,7 @@ class NotCompound(Exception):
 # TODO: make a copy if the compounds are from the different project
 def set_compounds_from_payload(medium):
     compound_dict = {c['id']: c['mass_concentration'] for c in api.payload['compounds']}
-    entities = filter_by_jwt_claims(BiologicalEntity).filter(BiologicalEntity.id.in_(compound_dict.keys()))
+    entities = query_compounds(filter_by_jwt_claims(BiologicalEntity)).filter(BiologicalEntity.id.in_(compound_dict.keys()))
     if entities.count() < len(api.payload['compounds']):
         raise NotCompound
     medium.compounds = entities.all()
@@ -309,13 +311,13 @@ class ExperimentSampleList(Resource):
     @jwt_required
     def post(self, experiment_id):
         """Create a sample"""
-        experiment = CRUD.get_by_id(Experiment, experiment_id)
+        CRUD.get_by_id(Experiment, experiment_id)
+        api.payload['experiment_id'] = experiment_id
         sample = CRUD.post(Sample, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
             'experiment_id': Experiment
         }, project_id=False)
-        sample.experiment = experiment
         return sample
 
 
@@ -366,14 +368,14 @@ class SampleMeasurementList(Resource):
     @jwt_required
     def post(self, sample_id):
         """Create a measurement for the sample"""
-        sample = get_sample_by_id(sample_id)
+        get_sample_by_id(sample_id)
+        api.payload['sample_id'] = sample_id
         measurement = CRUD.post(Measurement, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,
             'sample_id': Sample,
         }, project_id=False)
-        measurement.sample = sample
         return measurement
 
 
