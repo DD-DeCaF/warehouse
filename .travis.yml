@@ -9,52 +9,42 @@ services:
 
 env:
   global:
+    - IMAGE_REPO=gcr.io/dd-decaf-cfbf6/warehouse
     - IMAGE_TAG=travis-ci-test
-    - DEV_IMAGE=dddecaf/warehouse:${IMAGE_TAG}
-    - PROD_IMAGE=dddecaf/warehouse:travis-ci-prod
-  matrix:
-    - TARGET=test-travis
-    - TARGET=flake8
-    - TARGET=isort
-    - TARGET=license
+    - IMAGE=${IMAGE_REPO}:${IMAGE_TAG}
 
-matrix:
-  fast_finish: true
+before_install:
+  - echo ${DOCKER_PASSWORD} | docker login -u=decaftravis --password-stdin
 
-before_script:
-  - docker login -u=decaftravis -p=${DOCKER_PASSWORD}
-  - make network
+install:
+  - docker build -t ${IMAGE} .
+  - make setup
 
 script:
-  - docker pull ${DEV_IMAGE}
-  - make ${TARGET}
+  - make start
+  - make upgrade
+  - make fixture
+  - make test
 
-stages:
-  - build
-  - test
-  - name: deploy
-    if: branch = master
+before_deploy:
+  - ./scripts/install_gcloud.sh
+  - ./scripts/install_kubectl.sh
+  - docker tag ${IMAGE} ${IMAGE_REPO}:${TRAVIS_COMMIT::12}
+  - docker tag ${IMAGE} ${IMAGE_REPO}:${TRAVIS_BRANCH}
+  - docker push ${IMAGE_REPO}:${TRAVIS_COMMIT::12}
+  - docker push ${IMAGE_REPO}:${TRAVIS_BRANCH}
 
-jobs:
-  include:
-    - stage: build
-      script:
-        - docker build --build-arg PIPENV_FLAGS="--dev --deploy" -t ${DEV_IMAGE} .
-        - docker build --build-arg PIPENV_FLAGS="--deploy" -t ${PROD_IMAGE} .
-        - docker push ${DEV_IMAGE}
-        - docker push ${PROD_IMAGE}
-    - stage: deploy
-      script:
-        - docker pull ${PROD_IMAGE}
-      deploy:
-        provider: script
-        script: ./scripts/push_to_hub.sh
+deploy:
+  provider: script
+  script: ./scripts/deploy.sh
+  on:
+    all_branches: true
 
 notifications:
   email: false
   slack:
     rooms:
-      - ${SLACK_ACCOUNT}:${SLACK_TOKEN}#${SLACK_CHANNEL}
-    on_success: never
+      secure: dqRpdo1Cco6/dMVnfh/1jCME0lcxJd2apfi6/efMm+wrxzJL5+jeeMtD6dG8ikXypb26wei7ogMz8l/KNRInHFTOiRzAcwkHWmec7inFOEr0K7Z+p65uhOY6xyO3ttwkUF5pMXrxEsQb2OA2GhNPK0UsfLXYbPd9ZtgOH7KqavvvdmlCvfB2yMJbRt8qI7AwuYkLIwOADI4qqXCN5CgHGVa7B+e8ggOQADqoP1MvfIudhHjDUkRLKbPkKpo7bPkU2GbAzgcq/ZjeB+5+ZUiUxGrSz94TTKi7sE9gOQ5c74CvBdcnat+yfQxW1LEVi4IN6qvZSn8CK6rj3D1vZQXUJBhK4eOiOYMZ8owI30zKl3B2JIw3aF1T7wBYJVXaTt7d9IrU1Rd+ZpfYLOpTcUEaXZv6+tKvD4S30DgxzKh6i8/nS3QVVpUurXRysbge7lj0bGiOnDKwoEDL3MqAPSGaM7K9ABLps1rYs8EywTEJNSmIMbeQgakFdqVwPR+VY40vO/y2WUcgf1USnMwLoHl7yuIgR10qoiJGXRj1Rew5fhZez3vIHALRQiUWqKGirNr9j0IW15GUewts5eI0jFYrOAVhcb5eZ0cBumLGuIpMw17IS7k4Ma/f4777hVNctJIhOvZmDeBBxOLe5L0Omn+ebhB4Kq+rFY0yJ/N0tLhSq7U=
+    on_success: change
     on_failure: always
     on_pull_requests: false
