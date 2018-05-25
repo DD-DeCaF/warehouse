@@ -17,7 +17,7 @@ before_install:
   - echo ${DOCKER_PASSWORD} | docker login -u=decaftravis --password-stdin
 
 install:
-  - docker build -t ${IMAGE} .
+  - docker build --build-arg PIPENV_FLAGS="--deploy --ignore-hashes" -t ${IMAGE} .
   - make setup
 
 script:
