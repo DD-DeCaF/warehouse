@@ -30,7 +30,7 @@ RUN set -x \
     && ln -sf /usr/local/bin/python /bin/python \
     && apk add postgresql-libs \
     && apk add --no-cache --virtual .build-deps g++ musl-dev postgresql-dev \
-    && pip install --upgrade pip setuptools wheel pipenv \
+    && pip install --upgrade pip setuptools wheel pipenv==11.10.0 \
     && pipenv install --system ${PIPENV_FLAGS} \
     && rm -rf /root/.cache/pip \
     && apk del .build-deps
