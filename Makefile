@@ -21,7 +21,6 @@ volume:
 ## Build local docker images.
 build: network volume
 	docker-compose build
-	./scripts/copy_pipenv_lockfile.sh
 
 ## Start all services in the background.
 start:
