@@ -24,7 +24,7 @@ script:
   - make start
   - make upgrade
   - make fixture
-  - make test
+  - make test-travis
 
 before_deploy:
   - ./scripts/install_gcloud.sh
