@@ -2,6 +2,8 @@
 !src/
 !scripts/
 !tests/
+!migrations/
+!fixtures/
 !gunicorn.py
 !setup.cfg
 !Pipfile*
