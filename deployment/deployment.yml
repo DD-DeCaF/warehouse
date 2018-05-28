@@ -32,6 +32,11 @@ spec:
           value: "5432"
         - name: POSTGRES_DB_NAME
           value: warehouse
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: SECRET_KEY
         - name: POSTGRES_ENV_USERNAME
           valueFrom:
             secretKeyRef:
@@ -108,6 +113,11 @@ spec:
           value: "5432"
         - name: POSTGRES_DB_NAME
           value: warehouse-staging
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-staging
+              key: SECRET_KEY
         - name: POSTGRES_ENV_USERNAME
           valueFrom:
             secretKeyRef:
