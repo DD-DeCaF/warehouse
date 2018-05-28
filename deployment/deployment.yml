@@ -22,6 +22,8 @@ spec:
         env:
         - name: ENVIRONMENT
           value: production
+        - name: ALLOWED_ORIGINS
+          value: "http://localhost,https://api.dd-decaf.eu,https://api-staging.dd-decaf.eu,https://app.dd-decaf.eu,https://staging.dd-decaf.eu"
         - name: IAM_KEYS
           value: "http://iam-production/iam/keys"
         - name: POSTGRES_HOST
@@ -50,7 +52,8 @@ spec:
             cpu: "100m"
           limits:
             cpu: "500m"
-        command: ["flask", "db", "upgrade", "&&", "gunicorn", "-c", "gunicorn.py", "warehouse.wsgi:app"]
+        command: ["/bin/sh","-c"]
+        args: ["FLASK_APP=warehouse.wsgi:app flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
       - name: cloudsql-proxy
         image: gcr.io/cloudsql-docker/gce-proxy:1.11
         command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]
@@ -95,6 +98,8 @@ spec:
         env:
         - name: ENVIRONMENT
           value: production
+        - name: ALLOWED_ORIGINS
+          value: "http://localhost,https://api.dd-decaf.eu,https://api-staging.dd-decaf.eu,https://app.dd-decaf.eu,https://staging.dd-decaf.eu"
         - name: IAM_KEYS
           value: "http://iam-staging/iam/keys"
         - name: POSTGRES_HOST
@@ -123,7 +128,8 @@ spec:
             cpu: "100m"
           limits:
             cpu: "500m"
-        command: ["flask", "db", "upgrade", "&&", "gunicorn", "-c", "gunicorn.py", "warehouse.wsgi:app"]
+        command: ["/bin/sh","-c"]
+        args: ["FLASK_APP=warehouse.wsgi:app flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
       - name: cloudsql-proxy
         image: gcr.io/cloudsql-docker/gce-proxy:1.11
         command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]

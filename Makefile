@@ -45,32 +45,27 @@ test-travis:
 
 ## Init the alembic
 init:
-	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
-	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+	docker-compose run --rm -e ENVIRONMENT=development  web \
 		/bin/sh -c "flask db init"
 
 ## Autogenerate a migration revision
 revision:
-	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
-	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+	docker-compose run --rm -e ENVIRONMENT=development  web \
 		/bin/sh -c "flask db revision --message $(message) --autogenerate"
 
 ## Upgrade the database
 upgrade:
-	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
-	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+	docker-compose run --rm -e ENVIRONMENT=development web \
 		/bin/sh -c "flask db upgrade $(args)"
 
 ## Downgrade the database
 downgrade:
-	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
-	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+	docker-compose run --rm -e ENVIRONMENT=development web \
 		/bin/sh -c "flask db downgrade $(args)"
 
 ## Downgrade the database
 fixture:
-	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
-	docker-compose run --rm -e ENVIRONMENT=development $(ci_env)  web \
+	docker-compose run --rm -e ENVIRONMENT=development web \
 		/bin/sh -c "./src/manage.py fixtures populate"
 
 ## Run flake8.
