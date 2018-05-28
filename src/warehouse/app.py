@@ -30,7 +30,7 @@ from raven.contrib.flask import Sentry
 
 
 def fetch_jwt_public_key():
-    return requests.get(os.environ['IAM_KEYS']).json()["n"]
+    return requests.get(os.environ['IAM_KEYS']).json()["keys"][0]["n"]
 
 
 app = Flask(__name__)
