@@ -16,6 +16,7 @@ psycopg2 = "*"
 gunicorn = "*"
 gevent = "*"
 pyyaml = "*"
+requests = "*"
 raven = {version = "*", extras = ["flask"]}
 
 [dev-packages]
