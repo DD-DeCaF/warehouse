@@ -67,6 +67,7 @@ class Default(object):
         os.environ.setdefault('POSTGRES_ENV_USERNAME', 'postgres')
         os.environ.setdefault('POSTGRES_ENV_PASS', 'postgres')
         os.environ.setdefault('POSTGRES_DB_NAME', 'postgres')
+        os.environ.setdefault('POSTGRES_PORT_5432_TCP_ADDR', '{POSTGRES_HOST}:{POSTGRES_PORT}'.format(**os.environ))
         self.SQLALCHEMY_DATABASE_URI = 'postgres://{POSTGRES_ENV_USERNAME}:' \
                                        '{POSTGRES_ENV_PASS}@{POSTGRES_HOST}:{POSTGRES_PORT}/' \
                                        '{POSTGRES_DB_NAME}'.format(**os.environ)

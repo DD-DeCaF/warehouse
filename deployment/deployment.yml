@@ -58,7 +58,7 @@ spec:
           limits:
             cpu: "500m"
         command: ["/bin/sh","-c"]
-        args: ["FLASK_APP=warehouse.wsgi:app flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
+        args: ["FLASK_APP=src/warehouse/wsgi.py flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
       - name: cloudsql-proxy
         image: gcr.io/cloudsql-docker/gce-proxy:1.11
         command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]
@@ -138,8 +138,7 @@ spec:
             cpu: "100m"
           limits:
             cpu: "500m"
-        command: ["/bin/sh","-c"]
-        args: ["FLASK_APP=warehouse.wsgi:app flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
+        command: ["/bin/sh","-c","FLASK_APP=warehouse.wsgi:app flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
       - name: cloudsql-proxy
         image: gcr.io/cloudsql-docker/gce-proxy:1.11
         command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]
