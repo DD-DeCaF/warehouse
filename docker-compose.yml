@@ -19,7 +19,8 @@ services:
       - FLASK_APP=src/warehouse/wsgi.py
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:*}
       - SENTRY_DSN=${SENTRY_DSN}
-      - POSTGRES_PORT_5432_TCP_ADDR=postgres:5432
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
     command: gunicorn -c gunicorn.py warehouse.wsgi:app
   postgres:
     image: postgres

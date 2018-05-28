@@ -1,0 +1,33 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: warehouse-production
+  annotations:
+    prometheus.io/probe: "true"
+spec:
+  selector:
+    app: warehouse
+    env: production
+  ports:
+  - name: web
+    protocol: TCP
+    port: 80
+    targetPort: 8000
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: warehouse-staging
+  annotations:
+    prometheus.io/probe: "true"
+spec:
+  selector:
+    app: warehouse
+    env: staging
+  ports:
+  - name: web
+    protocol: TCP
+    port: 80
+    targetPort: 8000

@@ -18,6 +18,7 @@
 import logging
 import logging.config
 import os
+import requests
 
 from flask import Flask
 from flask_cors import CORS
@@ -28,11 +29,16 @@ from flask_jwt_extended import JWTManager
 from raven.contrib.flask import Sentry
 
 
+def fetch_jwt_public_key():
+    return requests.get(os.environ['IAM_KEYS']).json()["n"]
+
+
 app = Flask(__name__)
 if os.environ["ENVIRONMENT"] == "production":
     from warehouse.settings import Production
 
     app.config.from_object(Production())
+    app.config['JWT_PUBLIC_KEY'] = fetch_jwt_public_key()
 elif os.environ["ENVIRONMENT"] == "testing":
     from warehouse.settings import Testing
 

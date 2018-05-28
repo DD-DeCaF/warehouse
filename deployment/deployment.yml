@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: warehouse-production
+spec:
+  selector:
+    matchLabels:
+      app: warehouse
+      env: production
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: warehouse
+        env: production
+    spec:
+      containers:
+      - name: web
+        image: gcr.io/dd-decaf-cfbf6/warehouse:master
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: production
+        - name: IAM_KEYS
+          value: "http://iam-production/iam/keys"
+        - name: POSTGRES_HOST
+          value: localhost
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_DB_NAME
+          value: warehouse
+        - name: POSTGRES_ENV_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: POSTGRES_ENV_USERNAME
+        - name: POSTGRES_ENV_PASS
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: POSTGRES_ENV_PASS
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: SENTRY_DSN
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "500m"
+        command: ["flask", "db", "upgrade", "&&", "gunicorn", "-c", "gunicorn.py", "warehouse.wsgi:app"]
+      - name: cloudsql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.11
+        command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]
+        volumeMounts:
+          - name: cloudsql-instance-credentials
+            mountPath: /secrets/cloudsql
+            readOnly: true
+        resources:
+          requests:
+            cpu: "10m"
+          limits:
+            cpu: "100m"
+      volumes:
+      - name: cloudsql-instance-credentials
+        secret:
+          secretName: cloudsql-instance-credentials
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: warehouse-staging
+spec:
+  selector:
+    matchLabels:
+      app: warehouse
+      env: staging
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: warehouse
+        env: staging
+    spec:
+      containers:
+      containers:
+      - name: web
+        image: gcr.io/dd-decaf-cfbf6/warehouse:devel
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: production
+        - name: IAM_KEYS
+          value: "http://iam-staging/iam/keys"
+        - name: POSTGRES_HOST
+          value: localhost
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_DB_NAME
+          value: warehouse-staging
+        - name: POSTGRES_ENV_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-staging
+              key: POSTGRES_ENV_USERNAME
+        - name: POSTGRES_ENV_PASS
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-staging
+              key: POSTGRES_ENV_PASS
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-staging
+              key: SENTRY_DSN
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "500m"
+        command: ["flask", "db", "upgrade", "&&", "gunicorn", "-c", "gunicorn.py", "warehouse.wsgi:app"]
+      - name: cloudsql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.11
+        command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]
+        volumeMounts:
+          - name: cloudsql-instance-credentials
+            mountPath: /secrets/cloudsql
+            readOnly: true
+        resources:
+          requests:
+            cpu: "10m"
+          limits:
+            cpu: "100m"
+      volumes:
+      - name: cloudsql-instance-credentials
+        secret:
+          secretName: cloudsql-instance-credentials
