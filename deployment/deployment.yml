@@ -17,11 +17,14 @@ spec:
       containers:
       - name: web
         image: gcr.io/dd-decaf-cfbf6/warehouse:master
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
         env:
         - name: ENVIRONMENT
           value: production
+        - name: FLASK_APP
+          value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
           value: "http://localhost,https://api.dd-decaf.eu,https://api-staging.dd-decaf.eu,https://app.dd-decaf.eu,https://staging.dd-decaf.eu"
         - name: IAM_KEYS
@@ -58,7 +61,7 @@ spec:
           limits:
             cpu: "500m"
         command: ["/bin/sh","-c"]
-        args: ["FLASK_APP=src/warehouse/wsgi.py flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
+        args: ["flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
       - name: cloudsql-proxy
         image: gcr.io/cloudsql-docker/gce-proxy:1.11
         command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]
@@ -98,11 +101,14 @@ spec:
       containers:
       - name: web
         image: gcr.io/dd-decaf-cfbf6/warehouse:devel
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
         env:
         - name: ENVIRONMENT
           value: production
+        - name: FLASK_APP
+          value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
           value: "http://localhost,https://api.dd-decaf.eu,https://api-staging.dd-decaf.eu,https://app.dd-decaf.eu,https://staging.dd-decaf.eu"
         - name: IAM_KEYS
@@ -138,7 +144,8 @@ spec:
             cpu: "100m"
           limits:
             cpu: "500m"
-        command: ["/bin/sh","-c","FLASK_APP=warehouse.wsgi:app flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
+        command: ["/bin/sh","-c"]
+        args: ["flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
       - name: cloudsql-proxy
         image: gcr.io/cloudsql-docker/gce-proxy:1.11
         command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]
