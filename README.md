@@ -25,6 +25,35 @@ Perform the following steps after creating a new service from the cookiecutter.
 Run `make setup` first when initializing the project for the first time. Type
 `make` to see all commands.
 
+## Testing
+
+To run the tests locally, run the following commands
+
+To start the containers:
+```
+make start
+```
+
+To run the database migrations for the clean database:
+```
+make upgrade
+```
+
+To fill the database with data defined in `fixtures` directory:
+```
+make fixture
+```
+
+To test locally (will only work correctly if all the commands above are executed):
+```
+make test
+```
+
+To stop and delete containers (will not delete the database)
+```
+make clean
+```
+
 ### Environment
 
 Specify environment variables in a `.env` file. See `docker-compose.yml` for the
@@ -38,3 +67,4 @@ possible variables and their default values.
 * `SENTRY_DSN` DSN for reporting exceptions to
   [Sentry](https://docs.sentry.io/clients/python/integrations/flask/).
 * `ALLOWED_ORIGINS`: Comma-seperated list of CORS allowed origins.
+* `FLASK_APP`: `src/warehouse/wsgi.py`

@@ -41,7 +41,7 @@ test:
 test-travis:
 	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
 	docker-compose run --rm -e ENVIRONMENT=testing $(ci_env)  web \
-		/bin/sh -c "env && pytest -s --cov=src/warehouse tests && codecov"
+		/bin/sh -c "pytest -s --cov=src/warehouse tests && codecov"
 
 ## Init the alembic
 init:
