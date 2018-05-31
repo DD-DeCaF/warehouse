@@ -360,7 +360,7 @@ class SampleMeasurementList(Resource):
     @jwt_optional
     def get(self, sample_id):
         """List all the measurements for the given sample"""
-        sample = self.get_sample_by_id(sample_id)
+        sample = get_sample_by_id(sample_id)
         return sample.measurements.all()
 
     @api.marshal_with(measurement_schema)
