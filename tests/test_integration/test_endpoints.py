@@ -199,12 +199,33 @@ def test_medium(client, tokens):
     resp = client.post('/media', data=json.dumps(medium_info), headers=headers)
     assert resp.status_code == 200
     medium_id = json.loads(resp.get_data())['id']
+
+    medium_info = {'id': medium_id, 'compounds': get_compounds([1, 2])}
+    resp = client.put('/media/{}'.format(medium_id), data=json.dumps(medium_info), headers=headers)
+    assert resp.status_code == 200
+    medium_info = {'id': medium_id, 'compounds': get_compounds([666])}
+    resp = client.put('/media/{}'.format(medium_id), data=json.dumps(medium_info), headers=headers)
+    assert resp.status_code == 404
+
     content_type = headers.pop('Content-Type')
+
+    resp = client.get('/media/{}'.format(medium_id), headers=headers)
+    assert resp.status_code == 200
+    assert len(json.loads(resp.get_data())['compounds']) == 2
     resp = client.delete('/media/{}'.format(medium_id), headers=headers)
     assert resp.status_code == 200
     # Check that corresponding compounds are still available
     for compound_id in compounds_correct:
         assert client.get('bioentities/{}'.format(compound_id), headers=headers).status_code == 200
+
+
+def test_compounds(client):
+    resp = client.get('/bioentities/compounds')
+    assert resp.status_code == 200
+    assert resp.content_type == 'application/json'
+    results = json.loads(resp.get_data())
+    assert set([i['project_id'] for i in results]) == {None}
+    assert set([i['type_id'] for i in results]) == {2}
 
 
 def test_sample(client, tokens):
@@ -250,6 +271,10 @@ def test_sample(client, tokens):
     assert json.loads(resp.get_data()) == new_sample
     resp = client.get('/samples/666', headers=headers)
     assert resp.status_code == 404
+    resp = client.delete('/samples/{}'.format(new_sample['id']), headers=headers)
+    assert resp.status_code == 200
+    resp = client.delete('/samples/666', headers=headers)
+    assert resp.status_code == 404
 
 
 def test_measurements(client, tokens):
@@ -293,3 +318,11 @@ def test_measurements(client, tokens):
             assert resp.status_code == 200
         else:
             assert resp.status_code == 404
+
+    content_type = headers.pop('Content-Type')
+    resp = client.get('/samples/{}/measurements'.format(sample['correct']), headers=headers)
+    assert len(json.loads(resp.get_data())) > 0
+    assert resp.status_code == 200
+
+    resp = client.delete('/measurements/{}'.format(obj['id']), headers=headers)
+    assert resp.status_code == 200
