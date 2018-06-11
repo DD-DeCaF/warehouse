@@ -129,7 +129,7 @@ def test_post_put_delete(client, tokens, pair):
             else:
                 assert resp.status_code == 200
                 result = json.loads(resp.get_data())
-                assert {k: v for k, v in result.items() if k not in ['id']} == new_object
+                assert {k: v for k, v in result.items() if k not in ['id', 'created', 'updated']} == new_object
                 new_object['name'] = 'PUT'
                 resp = client.put(endpoint + '/{}'.format(result['id']), data=json.dumps(new_object), headers=headers)
                 assert resp.status_code == 200
