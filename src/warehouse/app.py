@@ -22,6 +22,8 @@ import requests
 
 from flask import Flask
 from flask_cors import CORS
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -57,6 +59,7 @@ api = Api(
 jwt._set_error_handler_callbacks(api)  # until https://github.com/noirbizarre/flask-restplus/issues/340 is fixed
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+admin = Admin(app, name='warehouse')
 
 
 def init_app(application, interface):
@@ -77,6 +80,9 @@ def init_app(application, interface):
     # Add routes and resources.
     from warehouse import resources, models
     interface.init_app(application)
+    for model in [models.Medium, models.MediumCompound,
+                  models.BiologicalEntity, models.BiologicalEntityType, models.Namespace]:
+        admin.add_view(ModelView(model, db.session))
 
     # Add CORS information for all resources.
     CORS(application)

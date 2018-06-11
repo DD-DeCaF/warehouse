@@ -27,6 +27,8 @@ base_schema = {
     'project_id': fields.Integer,
     'id': fields.Integer,
     'name': fields.String,
+    'created': fields.DateTime,
+    'updated': fields.DateTime,
 }
 
 organism_schema = api.model('Organism', base_schema)
@@ -70,6 +72,8 @@ medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
 }})
 
 sample_schema = api.model('Sample', {
+    'created': fields.DateTime,
+    'updated': fields.DateTime,
     'id': fields.Integer,
     'experiment_id': fields.Integer,
     'name': fields.String,
@@ -81,6 +85,8 @@ sample_schema = api.model('Sample', {
 })
 
 measurement_schema = api.model('Measurement', {
+    'created': fields.DateTime,
+    'updated': fields.DateTime,
     'id': fields.Integer,
     'sample_id': fields.Integer,
     'datetime_start': fields.DateTime,

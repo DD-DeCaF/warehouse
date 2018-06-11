@@ -90,9 +90,7 @@ def media(filepath='fixtures/media.yaml'):
         medium.compounds = BiologicalEntity.query.filter(BiologicalEntity.id.in_(obj['compounds'])).all()
         db.session.add(medium)
         db.session.flush()
-        app.logger.debug(medium.composition.all())
         for c in medium.composition:
-            app.logger.debug(c)
             c.mass_concentration = composition[c.compound_id]
         db.session.flush()
     db.session.commit()

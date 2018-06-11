@@ -12,17 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 from warehouse.app import db
 
 
-class Organism(db.Model):
+class TimestampMixin(object):
+    created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+
+class Organism(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
 
 
-class Strain(db.Model):
+class Strain(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -37,7 +43,7 @@ class Strain(db.Model):
     organism = db.relationship(Organism)
 
 
-class Medium(db.Model):
+class Medium(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -51,21 +57,21 @@ class Medium(db.Model):
     )
 
 
-class Namespace(db.Model):
+class Namespace(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
 
 
-class BiologicalEntityType(db.Model):
+class BiologicalEntityType(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
 
 
-class BiologicalEntity(db.Model):
+class BiologicalEntity(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -80,7 +86,7 @@ class BiologicalEntity(db.Model):
     type = db.relationship(BiologicalEntityType)
 
 
-class MediumCompound(db.Model):
+class MediumCompound(TimestampMixin, db.Model):
     __table_args__ = (
         db.PrimaryKeyConstraint('medium_id', 'compound_id'),
     )
@@ -95,14 +101,14 @@ class MediumCompound(db.Model):
     compound = db.relationship(BiologicalEntity)
 
 
-class Unit(db.Model):
+class Unit(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
 
 
-class Experiment(db.Model):
+class Experiment(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -113,7 +119,7 @@ class Experiment(db.Model):
 
 # TODO: tags
 # TODO: info to put to columns (protocol, temperature, gas etc)
-class Sample(db.Model):
+class Sample(TimestampMixin, db.Model):
     experiment_id = db.Column(db.Integer, db.ForeignKey('experiment.id'), nullable=False)
     experiment = db.relationship(Experiment, backref=db.backref('samples', cascade="all, delete-orphan", lazy='dynamic'))
 
@@ -131,7 +137,7 @@ class Sample(db.Model):
     medium = db.relationship(Medium)
 
 
-class Measurement(db.Model):
+class Measurement(TimestampMixin, db.Model):
     sample_id = db.Column(db.Integer, db.ForeignKey('sample.id'), nullable=False)
     sample = db.relationship(Sample, backref=db.backref('measurements', cascade="all, delete-orphan", lazy='dynamic'))
 
