@@ -103,6 +103,16 @@ def project_claims_verification(claims):
     return api.payload is None or ('project_id' not in api.payload) or ('prj' in claims and api.payload['project_id'] in claims['prj'])
 
 
+def post(obj, *args, **kwargs):
+    if isinstance(api.payload, dict):
+        return obj.post_one(api.payload, *args, **kwargs)
+    result = []
+    if isinstance(api.payload, list):
+        for data in api.payload:
+            result.append(obj.post_one(data, *args, **kwargs))
+    return result
+
+
 def crud_class_factory(model, route, schema, name, name_plural=None, check_permissions=None):
     if name_plural is None:
         name_plural = name + 's'
@@ -122,6 +132,10 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
             """List all the {}"""
             return CRUD.get(model)
 
+        def post_one(self, data):
+            """Create a {}"""
+            return CRUD.post(data, model, check_permissions=check_permissions)
+
         @api.response(403, 'Forbidden')
         @api.response(404, 'Not Found')
         @api.response(409, 'Constraint is not satisfied')
@@ -131,7 +145,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
         @docstring(name)
         def post(self):
             """Create a {}"""
-            return CRUD.post(model, check_permissions=check_permissions)
+            return post(self)
 
     @api.route(route + '/<int:id>')
     @api.response(404, 'Not Found')
@@ -160,7 +174,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
         @docstring(name)
         def put(self, id):
             """Update the {} by id"""
-            return CRUD.put(model, id, check_permissions=check_permissions)
+            return CRUD.put(api.payload, model, id, check_permissions=check_permissions)
 
     return List, Item
 
@@ -312,19 +326,23 @@ class ExperimentSampleList(Resource):
         """List all the samples for the given experiment"""
         return CRUD.get_by_id(Experiment, experiment_id).samples.all()
 
-    @api.marshal_with(sample_schema)
-    @api.expect(sample_schema)
-    @jwt_required
-    def post(self, experiment_id):
-        """Create a sample"""
+    def post_one(self, data, experiment_id):
+        """Create one sample"""
         CRUD.get_by_id(Experiment, experiment_id)
-        api.payload['experiment_id'] = experiment_id
-        sample = CRUD.post(Sample, check_permissions={
+        data['experiment_id'] = experiment_id
+        sample = CRUD.post(data, Sample, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
             'experiment_id': Experiment
         }, project_id=False)
         return sample
+
+    @api.marshal_with(sample_schema)
+    @api.expect(sample_schema)
+    @jwt_required
+    def post(self, experiment_id):
+        """Create a sample (accepts an object or an array of objects)"""
+        return post(self, experiment_id)
 
 
 @api.route('/samples/<int:id>')
@@ -350,7 +368,7 @@ class Samples(Resource):
     def put(self, id):
         """Update a sample by id"""
         sample = get_sample_by_id(id)
-        CRUD.modify_object(sample, check_permissions={
+        CRUD.modify_object(api.payload, sample, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
             'experiment_id': Experiment
@@ -369,20 +387,24 @@ class SampleMeasurementList(Resource):
         sample = get_sample_by_id(sample_id)
         return sample.measurements.all()
 
-    @api.marshal_with(measurement_schema)
-    @api.expect(measurement_schema)
-    @jwt_required
-    def post(self, sample_id):
-        """Create a measurement for the sample"""
+    def post_one(self, data, sample_id):
+        """Post one measurement"""
         get_sample_by_id(sample_id)
-        api.payload['sample_id'] = sample_id
-        measurement = CRUD.post(Measurement, check_permissions={
+        data['sample_id'] = sample_id
+        measurement = CRUD.post(data, Measurement, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,
             'sample_id': Sample,
         }, project_id=False)
         return measurement
+
+    @api.marshal_with(measurement_schema)
+    @api.expect(measurement_schema)
+    @jwt_required
+    def post(self, sample_id):
+        """Create measurements for the sample (accepts an object or an array of objects)"""
+        return post(self, sample_id)
 
 
 @api.route('/measurements/<int:id>')
@@ -408,7 +430,7 @@ class Measurements(Resource):
     def put(self, id):
         """Update a measurement by id"""
         measurement = get_measurement_by_id(id)
-        CRUD.modify_object(measurement, check_permissions={
+        CRUD.modify_object(api.payload, measurement, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,

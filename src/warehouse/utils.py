@@ -73,15 +73,15 @@ class CRUD(object):
         return cls.get_query(model).all()
 
     @classmethod
-    def post(cls, model, check_permissions=None, project_id=True):
+    def post(cls, data, model, check_permissions=None, project_id=True):
         if project_id:
-            if api.payload.get('project_id', None) is None:
+            if data.get('project_id', None) is None:
                 api.abort(403, 'Project ID is not set')
             else:
-                obj = model(project_id=api.payload['project_id'])
+                obj = model(project_id=data['project_id'])
         else:
             obj = model()
-        cls.modify_object(obj, check_permissions=check_permissions)
+        cls.modify_object(data, obj, check_permissions=check_permissions)
         db.session.add(obj)
         constraint_check(db)
         return obj
@@ -97,18 +97,18 @@ class CRUD(object):
         constraint_check(db)
 
     @classmethod
-    def put(cls, model, id, check_permissions=None):
+    def put(cls, data, model, id, check_permissions=None):
         obj = get_object(model, id)
-        cls.modify_object(obj, check_permissions=check_permissions)
+        cls.modify_object(data, obj, check_permissions=check_permissions)
         db.session.merge(obj)
         constraint_check(db)
         return obj
 
     @classmethod
-    def modify_object(cls, obj, check_permissions=None):
+    def modify_object(cls, data, obj, check_permissions=None):
         if check_permissions is None:
             check_permissions = {}
-        for field, new_value in api.payload.items():
+        for field, new_value in data.items():
             if field in check_permissions and new_value is not None:
                 if field == 'sample_id':
                     get_sample_by_id(new_value)

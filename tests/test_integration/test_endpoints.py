@@ -296,11 +296,11 @@ def test_measurements(client, tokens):
     sample = {'correct': 3, 'permissions': 4, 'not_existing': 666}
     for key, value in sample.items():
         resp = client.post('/samples/{}/measurements'.format(value),
-                           data=json.dumps(measurement_info),
+                           data=json.dumps([measurement_info]),
                            headers=headers)
         if key == 'correct':
             assert resp.status_code == 200
-            obj = json.loads(resp.get_data())
+            obj = json.loads(resp.get_data())[0]
         else:
             assert resp.status_code == 404
     numerator = {'correct': 1, 'permissions': 5, 'not_existing': 666}
