@@ -144,7 +144,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
         @jwt_required
         @docstring(name)
         def post(self):
-            """Create a {}"""
+            """Create a {} (accepts an object or an array of objects)"""
             return post(self)
 
     @api.route(route + '/<int:id>')
@@ -245,10 +245,10 @@ class NotCompound(Exception):
 
 
 # TODO: make a copy if the compounds are from the different project
-def set_compounds_from_payload(medium):
-    compound_dict = {c['id']: c['mass_concentration'] for c in api.payload['compounds']}
+def set_compounds_from_payload(data, medium):
+    compound_dict = {c['id']: c['mass_concentration'] for c in data['compounds']}
     entities = query_compounds(filter_by_jwt_claims(BiologicalEntity)).filter(BiologicalEntity.id.in_(compound_dict.keys()))
-    if entities.count() < len(api.payload['compounds']):
+    if entities.count() < len(data['compounds']):
         raise NotCompound
     medium.compounds = entities.all()
     db.session.add(medium)
@@ -271,21 +271,25 @@ class MediaList(Resource):
             result.append(serialized)
         return result
 
+    def post_one(self, data):
+        """Create one medium"""
+        medium = Medium(
+            project_id=data['project_id'],
+            name=data['name'],
+            ph=data['ph'],
+        )
+        try:
+            set_compounds_from_payload(data, medium)
+        except NotCompound:
+            api.abort(404, "No such compound")
+        return serialized_medium_with_mass_concentrations(medium)
+
     @api.marshal_with(medium_schema)
     @api.expect(medium_simple_schema)
     @jwt_required
     def post(self):
-        """Create a medium by defining the recipe"""
-        medium = Medium(
-            project_id=api.payload['project_id'],
-            name=api.payload['name'],
-            ph=api.payload['ph'],
-        )
-        try:
-            set_compounds_from_payload(medium)
-        except NotCompound:
-            api.abort(404, "No such compound")
-        return serialized_medium_with_mass_concentrations(medium)
+        """Create a medium by defining the recipe (accepts an object or an array of objects)"""
+        return post(self)
 
 
 @api.route('/media/<int:id>')
@@ -310,7 +314,7 @@ class Media(Resource):
         """Update the medium by id"""
         medium = CRUD.get_by_id(Medium, id)
         try:
-            set_compounds_from_payload(medium)
+            set_compounds_from_payload(api.payload, medium)
         except NotCompound:
             api.abort(404, "No such compound")
         return serialized_medium_with_mass_concentrations(medium)
