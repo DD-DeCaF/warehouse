@@ -12,88 +12,63 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import yaml
 from flask_script import Manager
 
-from warehouse.app import db, app
 from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit, Experiment, Sample, Measurement
+from warehouse.utils import add_from_file
 
 
 Fixtures = Manager(usage="Populate the database with fixtures")
 
 
-def add_from_file(filepath, model):
-    objects = yaml.load(open(filepath, 'r'))
-    for obj in objects:
-        new_object = model(**obj)
-        db.session.add(new_object)
-        db.session.flush()
-    db.session.commit()
-    app.logger.debug('{} is added: {} objects in db'.format(model, model.query.count()))
-
-
 @Fixtures.command
 def organisms(filepath='fixtures/organisms.yaml'):
-    add_from_file(filepath, Organism)
+    add_from_file(open(filepath, 'r'), Organism)
 
 
 @Fixtures.command
 def strains(filepath='fixtures/strains.yaml'):
-    add_from_file(filepath, Strain)
+    add_from_file(open(filepath, 'r'), Strain)
 
 
 @Fixtures.command
 def namespaces(filepath='fixtures/namespaces.yaml'):
-    add_from_file(filepath, Namespace)
+    add_from_file(open(filepath, 'r'), Namespace)
 
 
 @Fixtures.command
 def types(filepath='fixtures/types.yaml'):
-    add_from_file(filepath, BiologicalEntityType)
+    add_from_file(open(filepath, 'r'), BiologicalEntityType)
 
 
 @Fixtures.command
 def units(filepath='fixtures/units.yaml'):
-    add_from_file(filepath, Unit)
+    add_from_file(open(filepath, 'r'), Unit)
 
 
 @Fixtures.command
 def biological_entities(filepath='fixtures/biological_entities.yaml'):
-    add_from_file(filepath, BiologicalEntity)
+    add_from_file(open(filepath, 'r'), BiologicalEntity)
 
 
 @Fixtures.command
 def experiments(filepath='fixtures/experiments.yaml'):
-    add_from_file(filepath, Experiment)
+    add_from_file(open(filepath, 'r'), Experiment)
 
 
 @Fixtures.command
 def samples(filepath='fixtures/samples.yaml'):
-    add_from_file(filepath, Sample)
+    add_from_file(open(filepath, 'r'), Sample)
 
 
 @Fixtures.command
 def measurements(filepath='fixtures/measurements.yaml'):
-    add_from_file(filepath, Measurement)
+    add_from_file(open(filepath, 'r'), Measurement)
 
 
 @Fixtures.command
 def media(filepath='fixtures/media.yaml'):
-    objects = yaml.load(open(filepath, 'r'))
-    for obj in objects:
-        composition = dict(zip(obj['compounds'], obj['mass_concentrations']))
-        medium = Medium(
-            project_id=obj['project_id'],
-            name=obj['name'],
-            ph=obj['ph'],
-        )
-        medium.compounds = BiologicalEntity.query.filter(BiologicalEntity.id.in_(obj['compounds'])).all()
-        db.session.add(medium)
-        db.session.flush()
-        for c in medium.composition:
-            c.mass_concentration = composition[c.compound_id]
-        db.session.flush()
-    db.session.commit()
+    add_from_file(open(filepath, 'r'), Medium)
 
 
 @Fixtures.command

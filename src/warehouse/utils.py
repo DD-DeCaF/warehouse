@@ -13,10 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import yaml
+
 from flask_jwt_extended import get_jwt_claims
 from sqlalchemy import exc
 from warehouse.app import app, api, db, jwt
-from warehouse.models import Sample, Experiment, Measurement
+from warehouse.models import Sample, Experiment, Measurement, BiologicalEntity, Medium
 
 
 def filter_by_jwt_claims(model):
@@ -61,6 +63,37 @@ def get_measurement_by_id(measurement_id):
     if not query.count():
         api.abort(404, "No such measurement")
     return measurement
+
+
+def add_from_file(file_object, model):
+    if model.__tablename__ == 'medium':
+        return add_media_from_file(file_object)
+    objects = yaml.load(file_object)
+    for obj in objects:
+        new_object = model(**obj)
+        db.session.add(new_object)
+        db.session.flush()
+    db.session.commit()
+    app.logger.debug('{}: {} added, {} objects in db'.format(model, len(objects), model.query.count()))
+
+
+def add_media_from_file(file_object):
+    objects = yaml.load(file_object)
+    for obj in objects:
+        composition = dict(zip(obj['compounds'], obj['mass_concentrations']))
+        medium = Medium(
+            project_id=obj['project_id'],
+            name=obj['name'],
+            ph=obj['ph'],
+        )
+        medium.compounds = BiologicalEntity.query.filter(BiologicalEntity.id.in_(obj['compounds'])).all()
+        db.session.add(medium)
+        db.session.flush()
+        for c in medium.composition:
+            c.mass_concentration = composition[c.compound_id]
+        db.session.flush()
+    db.session.commit()
+    app.logger.debug('Medium: {} added, {} objects in db'.format(len(objects), Medium.query.count()))
 
 
 class CRUD(object):

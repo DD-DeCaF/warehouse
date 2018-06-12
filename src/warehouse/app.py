@@ -18,11 +18,13 @@
 import logging
 import logging.config
 import os
+
+import yaml
 import requests
 
 from flask import Flask
 from flask_cors import CORS
-from flask_admin import Admin
+from flask_admin import Admin, form
 from flask_admin.contrib.sqla import ModelView
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
@@ -78,11 +80,32 @@ def init_app(application, interface):
         sentry.init_app(application)
 
     # Add routes and resources.
-    from warehouse import resources, models
+    from warehouse import resources, models, utils
     interface.init_app(application)
+
+    class ProtectedModelView(ModelView):
+        form_excluded_columns = ['created', 'updated']
+        can_export = True
+        form_extra_fields = {
+            'file': form.FileUploadField(
+                'Bulk creation with a yaml file'
+            )
+        }
+
+        def is_accessible(self):
+            # TODO: use jwt tokens
+            return True
+
+        def create_model(self, form):
+            if form.file.data is not None:
+                utils.add_from_file(form.file.data, self.model)
+            else:
+                super().create_model(form)
+            return True
+
     for model in [models.Medium, models.MediumCompound,
                   models.BiologicalEntity, models.BiologicalEntityType, models.Namespace]:
-        admin.add_view(ModelView(model, db.session))
+        admin.add_view(ProtectedModelView(model, db.session))
 
     # Add CORS information for all resources.
     CORS(application)
