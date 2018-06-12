@@ -10,15 +10,6 @@
 [![devel Codecov](https://codecov.io/gh/DD-DeCaF/warehouse/branch/devel/graph/badge.svg)](https://codecov.io/gh/DD-DeCaF/warehouse/branch/devel)
 [![devel Requirements Status](https://requires.io/github/DD-DeCaF/warehouse/requirements.svg?branch=devel)](https://requires.io/github/DD-DeCaF/warehouse/requirements/?branch=devel)
 
-## Post-cookiecutter steps
-
-Perform the following steps after creating a new service from the cookiecutter.
-
-* Create the following environment variables in Travis CI:
-  * `ENVIRONMENT`: `testing`
-  * `FLASK_APP`: `src/warehouse/wsgi.py`
-  * `DOCKER_PASSWORD`: For push access to [Docker Hub](https://hub.docker.com/u/dddecaf/dashboard/)
-* Remove this section from the README.
 
 ## Development
 

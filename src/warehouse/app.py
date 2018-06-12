@@ -19,7 +19,6 @@ import logging
 import logging.config
 import os
 
-import yaml
 import requests
 
 from flask import Flask
