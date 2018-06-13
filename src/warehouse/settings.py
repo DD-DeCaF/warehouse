@@ -73,6 +73,8 @@ class Default(object):
                                        '{POSTGRES_DB_NAME}'.format(**os.environ)
         self.SQLALCHEMY_TRACK_MODIFICATIONS = False
         self.JWT_ACCESS_TOKEN_EXPIRES = False
+        self.BASIC_AUTH_USERNAME = os.environ['BASIC_AUTH_USERNAME']
+        self.BASIC_AUTH_PASSWORD = os.environ['BASIC_AUTH_PASSWORD']
 
 
 class Development(Default):

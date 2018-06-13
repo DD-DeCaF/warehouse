@@ -55,6 +55,16 @@ spec:
             secretKeyRef:
               name: warehouse-production
               key: SENTRY_DSN
+        - name: BASIC_AUTH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: BASIC_AUTH_USERNAME
+        - name: BASIC_AUTH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: BASIC_AUTH_PASSWORD
         resources:
           requests:
             cpu: "100m"
@@ -139,6 +149,16 @@ spec:
             secretKeyRef:
               name: warehouse-staging
               key: SENTRY_DSN
+        - name: BASIC_AUTH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-staging
+              key: BASIC_AUTH_USERNAME
+        - name: BASIC_AUTH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-staging
+              key: BASIC_AUTH_PASSWORD
         resources:
           requests:
             cpu: "100m"

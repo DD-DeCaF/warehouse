@@ -21,8 +21,9 @@ import os
 
 import requests
 
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
+from flask_basicauth import BasicAuth
 from flask_admin import Admin, form
 from flask_admin.contrib.sqla import ModelView
 from flask_restplus import Api
@@ -61,6 +62,7 @@ jwt._set_error_handler_callbacks(api)  # until https://github.com/noirbizarre/fl
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 admin = Admin(app, name='warehouse')
+basic_auth = BasicAuth(app)
 
 
 def init_app(application, interface):
@@ -91,16 +93,17 @@ def init_app(application, interface):
             )
         }
 
-        def is_accessible(self):
-            # TODO: use jwt tokens
-            return True
-
         def create_model(self, form):
             if form.file.data is not None:
                 utils.add_from_file(form.file.data, self.model)
             else:
-                super().create_model(form)
+                return super().create_model(form)
             return True
+
+    @application.before_request
+    def restrict_admin():
+        if request.path.startswith(admin.url) and not basic_auth.authenticate():
+            return basic_auth.challenge()
 
     for model in [models.Medium, models.MediumCompound,
                   models.BiologicalEntity, models.BiologicalEntityType, models.Namespace]:

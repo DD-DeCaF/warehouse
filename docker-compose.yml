@@ -21,6 +21,8 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
+      - BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME:-admin}
+      - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
     command: ["/bin/sh","-c","FLASK_APP=src/warehouse/wsgi.py flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
   postgres:
     image: postgres
