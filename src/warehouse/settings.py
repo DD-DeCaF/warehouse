@@ -100,7 +100,9 @@ class Development(Default):
 class Testing(Default):
     """Testing environment configuration."""
 
-    pass
+    def __init__(self):
+        super().__init__()
+        self.TESTING = True
 
 
 class Production(Default):
