@@ -23,6 +23,8 @@ spec:
         env:
         - name: ENVIRONMENT
           value: production
+        - name: SCRIPT_NAME
+          value: /warehouse
         - name: FLASK_APP
           value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
@@ -117,6 +119,8 @@ spec:
         env:
         - name: ENVIRONMENT
           value: production
+        - name: SCRIPT_NAME
+          value: /warehouse
         - name: FLASK_APP
           value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS

@@ -31,6 +31,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from raven.contrib.flask import Sentry
+from werkzeug.contrib.fixers import ProxyFix
 
 
 def fetch_jwt_public_key():
@@ -73,6 +74,7 @@ def init_app(application, interface):
     # our loggers later when it is first accessed.
     application.logger
     logging.config.dictConfig(application.config['LOGGING'])
+    application.wsgi_app = ProxyFix(application.wsgi_app)
 
     # Configure Sentry
     if application.config['SENTRY_DSN']:
