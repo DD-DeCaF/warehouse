@@ -68,11 +68,6 @@ basic_auth = BasicAuth(app)
 
 def init_app(application, interface):
     """Initialize the main app with config information and routes."""
-    # Configure logging
-    # The flask logger, when created, disables existing loggers. The following
-    # statement ensures the flask logger is created, so that it doesn't disable
-    # our loggers later when it is first accessed.
-    application.logger
     logging.config.dictConfig(application.config['LOGGING'])
     application.wsgi_app = ProxyFix(application.wsgi_app)
 
