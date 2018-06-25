@@ -18,7 +18,7 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - SCRIPT_NAME=${SCRIPT_NAME}
       - FLASK_APP=src/warehouse/wsgi.py
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:*}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:4200}
       - SENTRY_DSN=${SENTRY_DSN}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
