@@ -118,7 +118,7 @@ spec:
         - containerPort: 8000
         env:
         - name: ENVIRONMENT
-          value: production
+          value: staging
         - name: SCRIPT_NAME
           value: /warehouse
         - name: FLASK_APP
