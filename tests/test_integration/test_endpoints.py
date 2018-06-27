@@ -208,7 +208,7 @@ def test_medium(client, tokens):
     resp = client.put('/media/{}'.format(medium_id), data=json.dumps(medium_info), headers=headers)
     assert resp.status_code == 404
 
-    content_type = headers.pop('Content-Type')
+    headers.pop('Content-Type')
 
     resp = client.get('/media/{}'.format(medium_id), headers=headers)
     assert resp.status_code == 200
@@ -263,7 +263,7 @@ def test_sample(client, tokens):
             assert resp.status_code == 200
         else:
             assert resp.status_code == 404
-    content_type = headers.pop('Content-Type')
+    headers.pop('Content-Type')
     resp = client.get('/experiments/{}/samples'.format(new_sample['experiment_id']), headers=headers)
     assert resp.status_code == 200
     assert len(json.loads(resp.get_data())) > 0
@@ -320,7 +320,7 @@ def test_measurements(client, tokens):
         else:
             assert resp.status_code == 404
 
-    content_type = headers.pop('Content-Type')
+    headers.pop('Content-Type')
     resp = client.get('/samples/{}/measurements'.format(sample['correct']), headers=headers)
     assert len(json.loads(resp.get_data())) > 0
     assert resp.status_code == 200
