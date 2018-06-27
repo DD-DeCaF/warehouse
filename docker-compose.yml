@@ -32,10 +32,8 @@ services:
     volumes:
       - "warehouse:/var/lib/postgresql/data"
     networks:
-      default:
-      DD-DeCaF:
-        aliases:
-          - warehouse
+      - default
+
 
 # Additional services that the `web` service `depends_on` should usually only
 # be on the default network and not exposed on the general network, i.e.,
