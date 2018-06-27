@@ -85,11 +85,12 @@ def init_app(application, interface):
     interface.init_app(application)
 
     class ProtectedModelView(ModelView):
+        page_size = 1000
         form_excluded_columns = ['created', 'updated']
         can_export = True
         form_extra_fields = {
             'file': form.FileUploadField(
-                'Bulk creation with a yaml file'
+                'Bulk creation with a json file'
             )
         }
 
@@ -105,8 +106,18 @@ def init_app(application, interface):
         if request.path.startswith(admin.url) and not basic_auth.authenticate():
             return basic_auth.challenge()
 
-    for model in [models.Medium, models.MediumCompound,
-                  models.BiologicalEntity, models.BiologicalEntityType, models.Namespace]:
+    for model in [
+        models.BiologicalEntity,
+        models.BiologicalEntityType,
+        models.Namespace,
+        models.Organism,
+        models.Medium,
+        models.Strain,
+        models.Unit,
+        models.Experiment,
+        models.Sample,
+        models.Measurement,
+    ]:
         admin.add_view(ProtectedModelView(model, db.session))
 
     # Add CORS information for all resources.

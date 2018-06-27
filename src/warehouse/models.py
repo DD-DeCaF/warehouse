@@ -75,7 +75,7 @@ class BiologicalEntity(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(256), nullable=False)
+    name = db.Column(db.String(2048), nullable=False)
 
     namespace_id = db.Column(db.Integer, db.ForeignKey('namespace.id'), nullable=False)
     namespace = db.relationship(Namespace)
@@ -134,7 +134,10 @@ class Sample(TimestampMixin, db.Model):
     strain = db.relationship(Strain)
 
     medium_id = db.Column(db.Integer, db.ForeignKey('medium.id'), nullable=False)
-    medium = db.relationship(Medium)
+    medium = db.relationship(Medium, foreign_keys=[medium_id])
+
+    feed_medium_id = db.Column(db.Integer, db.ForeignKey('medium.id'))
+    feed_medium = db.relationship(Medium, foreign_keys=[feed_medium_id])
 
 
 class Measurement(TimestampMixin, db.Model):
@@ -146,7 +149,7 @@ class Measurement(TimestampMixin, db.Model):
     datetime_start = db.Column(db.DateTime, nullable=False)
     datetime_end = db.Column(db.DateTime)
 
-    numerator_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'), nullable=False)
+    numerator_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'))
     numerator = db.relationship(BiologicalEntity, foreign_keys=[numerator_id])
 
     denominator_id = db.Column(db.Integer, db.ForeignKey('biological_entity.id'))

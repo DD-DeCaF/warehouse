@@ -22,53 +22,63 @@ Fixtures = Manager(usage="Populate the database with fixtures")
 
 
 @Fixtures.command
-def organisms(filepath='fixtures/organisms.yaml'):
-    add_from_file(open(filepath, 'r'), Organism)
+def organisms(filepath='fixtures/organisms.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, Organism)
 
 
 @Fixtures.command
-def strains(filepath='fixtures/strains.yaml'):
-    add_from_file(open(filepath, 'r'), Strain)
+def strains(filepath='fixtures/strains.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, Strain)
 
 
 @Fixtures.command
-def namespaces(filepath='fixtures/namespaces.yaml'):
-    add_from_file(open(filepath, 'r'), Namespace)
+def namespaces(filepath='fixtures/namespaces.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, Namespace)
 
 
 @Fixtures.command
-def types(filepath='fixtures/types.yaml'):
-    add_from_file(open(filepath, 'r'), BiologicalEntityType)
+def types(filepath='fixtures/types.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, BiologicalEntityType)
 
 
 @Fixtures.command
-def units(filepath='fixtures/units.yaml'):
-    add_from_file(open(filepath, 'r'), Unit)
+def units(filepath='fixtures/units.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, Unit)
 
 
 @Fixtures.command
-def biological_entities(filepath='fixtures/biological_entities.yaml'):
-    add_from_file(open(filepath, 'r'), BiologicalEntity)
+def biological_entities(filepath='fixtures/biological_entities.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, BiologicalEntity)
 
 
 @Fixtures.command
-def experiments(filepath='fixtures/experiments.yaml'):
-    add_from_file(open(filepath, 'r'), Experiment)
+def experiments(filepath='fixtures/experiments.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, Experiment)
 
 
 @Fixtures.command
-def samples(filepath='fixtures/samples.yaml'):
-    add_from_file(open(filepath, 'r'), Sample)
+def samples(filepath='fixtures/samples.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, Sample)
 
 
 @Fixtures.command
-def measurements(filepath='fixtures/measurements.yaml'):
-    add_from_file(open(filepath, 'r'), Measurement)
+def measurements(filepath='fixtures/measurements.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, Measurement)
 
 
 @Fixtures.command
-def media(filepath='fixtures/media.yaml'):
-    add_from_file(open(filepath, 'r'), Medium)
+def media(filepath='fixtures/media.json'):
+    with open(filepath, 'r') as f:
+        add_from_file(f, Medium)
 
 
 @Fixtures.command

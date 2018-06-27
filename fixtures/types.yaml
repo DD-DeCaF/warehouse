@@ -1,9 +1,0 @@
----
-- project_id: null
-  name: "reaction"
-- project_id: null
-  name: "compound"
-- project_id: 1
-  name: "new secret type"
-- project_id: 4
-  name: "another secret type"

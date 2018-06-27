@@ -18,7 +18,6 @@ psycopg2 = "*"
 gunicorn = "*"
 gevent = "*"
 greenlet = {version = "*", platform_python_implementation="=='CPython'"}
-pyyaml = "*"
 requests = "*"
 raven = {version = "*", extras = ["flask"]}
 

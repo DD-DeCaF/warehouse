@@ -13,8 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import yaml
-
+import json
 from flask_jwt_extended import get_jwt_claims
 from sqlalchemy import exc
 from warehouse.app import app, api, db, jwt
@@ -68,20 +67,22 @@ def get_measurement_by_id(measurement_id):
 def add_from_file(file_object, model):
     if model.__tablename__ == 'medium':
         return add_media_from_file(file_object)
-    objects = yaml.load(file_object)
-    for obj in objects:
+    app.logger.debug('Started loading the file')
+    for line in file_object:
+        obj = json.loads(line)
         new_object = model(**obj)
         db.session.add(new_object)
         db.session.flush()
     db.session.commit()
-    app.logger.debug('{}: {} added, {} objects in db'.format(model, len(objects), model.query.count()))
+    app.logger.debug('{}: {} objects in db'.format(model, model.query.count()))
 
 
 def add_media_from_file(file_object):
-    objects = yaml.load(file_object)
-    for obj in objects:
+    for line in file_object:
+        obj = json.loads(line)
         composition = dict(zip(obj['compounds'], obj['mass_concentrations']))
         medium = Medium(
+            id=obj['id'],
             project_id=obj['project_id'],
             name=obj['name'],
             ph=obj['ph'],
@@ -93,7 +94,7 @@ def add_media_from_file(file_object):
             c.mass_concentration = composition[c.compound_id]
         db.session.flush()
     db.session.commit()
-    app.logger.debug('Medium: {} added, {} objects in db'.format(len(objects), Medium.query.count()))
+    app.logger.debug('Medium: added, {} objects in db'.format(Medium.query.count()))
 
 
 class CRUD(object):

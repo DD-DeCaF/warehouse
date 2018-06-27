@@ -82,6 +82,7 @@ sample_schema = api.model('Sample', {
     'aerobic': fields.Boolean,
     'strain_id': fields.Integer,
     'medium_id': fields.Integer,
+    'feed_medium_id': fields.Integer,
 })
 
 measurement_schema = api.model('Measurement', {
@@ -337,6 +338,7 @@ class ExperimentSampleList(Resource):
         sample = CRUD.post(data, Sample, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
+            'feed_medium_id': Medium,
             'experiment_id': Experiment
         }, project_id=False)
         return sample
@@ -375,7 +377,8 @@ class Samples(Resource):
         CRUD.modify_object(api.payload, sample, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
-            'experiment_id': Experiment
+            'feed_medium_id': Medium,
+            'experiment_id': Experiment,
         })
         db.session.merge(sample)
         constraint_check(db)
