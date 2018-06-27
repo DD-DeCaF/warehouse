@@ -16,11 +16,11 @@
 """Provide session level fixtures."""
 
 import pytest
-from flask_jwt_extended import create_access_token
+from jose import jwt
 
 from warehouse.app import api
 from warehouse.app import app as app_
-from warehouse.app import init_app, jwt
+from warehouse.app import init_app
 
 
 PROJECTS1 = [1, 2]
@@ -44,11 +44,7 @@ def client(app):
 @pytest.fixture(scope="session")
 def tokens(app):
     """Provides two tokens with different claims to test the permissions"""
-    @jwt.user_claims_loader
-    def add_claims_to_access_token(projects):
-        return {'prj': projects}
-
-    yield {
-        create_access_token(identity=PROJECTS1): PROJECTS1,
-        create_access_token(identity=PROJECTS2): PROJECTS2,
+    return {
+        jwt.encode({'prj': PROJECTS1}, app.config['JWT_PRIVATE_KEY'], 'RS512'): PROJECTS1,
+        jwt.encode({'prj': PROJECTS2}, app.config['JWT_PRIVATE_KEY'], 'RS512'): PROJECTS2,
     }

@@ -124,7 +124,7 @@ def test_post_put_delete(client, tokens, pair):
             new_object['project_id'] = project_id
             resp = client.post(endpoint, data=json.dumps(new_object), headers=headers)
             if project_id not in projects:
-                assert resp.status_code == 400
+                assert resp.status_code == 403
             elif project_id is None:
                 assert resp.status_code == 403
             else:
