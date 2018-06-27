@@ -16,13 +16,11 @@
 """Provide session level fixtures."""
 
 import pytest
-
 from flask_jwt_extended import create_access_token
 
 from warehouse.app import api
-from warehouse.app import jwt
 from warehouse.app import app as app_
-from warehouse.app import init_app
+from warehouse.app import init_app, jwt
 
 
 PROJECTS1 = [1, 2]

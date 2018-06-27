@@ -16,8 +16,10 @@
 import json
 from flask_jwt_extended import get_jwt_claims
 from sqlalchemy import exc
-from warehouse.app import app, api, db, jwt
-from warehouse.models import Sample, Experiment, Measurement, BiologicalEntity, Medium
+
+from warehouse.app import api, app, db, jwt
+from warehouse.models import (
+    BiologicalEntity, Experiment, Measurement, Medium, Sample)
 
 
 def filter_by_jwt_claims(model):

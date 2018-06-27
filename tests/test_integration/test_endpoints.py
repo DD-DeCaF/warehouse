@@ -15,10 +15,11 @@
 
 """Test expected functioning of the OpenAPI docs endpoints."""
 
-import json
-import itertools
 import datetime
+import itertools
+import json
 from copy import copy
+
 from pytest import mark
 
 

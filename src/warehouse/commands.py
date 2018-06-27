@@ -14,7 +14,9 @@
 # limitations under the License.
 from flask_script import Manager
 
-from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit, Experiment, Sample, Measurement
+from warehouse.models import (
+    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium,
+    Namespace, Organism, Sample, Strain, Unit)
 from warehouse.utils import add_from_file
 
 

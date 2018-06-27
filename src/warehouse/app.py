@@ -19,14 +19,14 @@ import logging
 import logging.config
 
 from flask import Flask, request
-from flask_cors import CORS
-from flask_basicauth import BasicAuth
 from flask_admin import Admin, form
 from flask_admin.contrib.sqla import ModelView
+from flask_basicauth import BasicAuth
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager
+from flask_migrate import Migrate
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
 from raven.contrib.flask import Sentry
 from werkzeug.contrib.fixers import ProxyFix
 
