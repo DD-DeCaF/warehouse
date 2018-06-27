@@ -119,4 +119,4 @@ class Production(Default):
         self.DEBUG = False
         self.SECRET_KEY = os.environ['SECRET_KEY']
         self.LOGGING['root']['level'] = 'INFO'
-        self.JWT_PUBLIC_KEY = requests.get(os.environ['IAM_KEYS']).json()["keys"][0]["n"]
+        self.JWT_PUBLIC_KEY = requests.get(os.environ['IAM_KEYS']).json()["keys"][0]

@@ -11,7 +11,6 @@ flask-basicauth = "*"
 flask-admin = "*"
 flask-sqlalchemy = "*"
 Flask-Migrate = "*"
-flask-jwt-extended = "*"
 Flask-Fixtures = "*"
 Flask-Script = "*"
 psycopg2 = "*"
@@ -20,6 +19,7 @@ gevent = "*"
 greenlet = {version = "*", platform_python_implementation="=='CPython'"}
 requests = "*"
 raven = {version = "*", extras = ["flask"]}
+python-jose = "*"
 
 [dev-packages]
 pytest = "*"

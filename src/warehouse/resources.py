@@ -14,10 +14,10 @@
 # limitations under the License.
 
 """Implement RESTful API endpoints using resources."""
-from flask_jwt_extended import jwt_optional, jwt_required
 from flask_restplus import Resource, fields, marshal_with_field
 
-from warehouse.app import api, db, jwt
+from warehouse.app import api, db
+from warehouse.jwt import jwt_required, project_claims_verification
 from warehouse.models import (
     BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium, Namespace, Organism, Sample, Strain, Unit)
 from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_measurement_by_id, get_sample_by_id
@@ -99,12 +99,6 @@ measurement_schema = api.model('Measurement', {
 })
 
 
-@jwt.claims_verification_loader
-def project_claims_verification(claims):
-    return api.payload is None or ('project_id' not in api.payload) or ('prj' in claims and
-                                                                        api.payload['project_id'] in claims['prj'])
-
-
 def post(obj, *args, **kwargs):
     if isinstance(api.payload, dict):
         return obj.post_one(api.payload, *args, **kwargs)
@@ -128,7 +122,6 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
     @api.route(route)
     class List(Resource):
         @api.marshal_with(schema)
-        @jwt_optional
         @docstring(name_plural)
         def get(self):
             """List all the {}"""
@@ -144,6 +137,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
         @api.marshal_with(schema)
         @api.expect(schema)
         @jwt_required
+        @project_claims_verification
         @docstring(name)
         def post(self):
             """Create a {} (accepts an object or an array of objects)"""
@@ -154,7 +148,6 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
     @api.param('id', 'The identifier')
     class Item(Resource):
         @api.marshal_with(schema)
-        @jwt_optional
         @docstring(name)
         def get(self, id):
             """Get the {} by id"""
@@ -163,6 +156,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
         # TODO: archive instead of delete
         @api.response(403, 'Forbidden')
         @jwt_required
+        @project_claims_verification
         @docstring(name)
         def delete(self, id):
             """Delete the {} by id"""
@@ -173,6 +167,7 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
         @api.marshal_with(schema)
         @api.expect(schema)
         @jwt_required
+        @project_claims_verification
         @docstring(name)
         def put(self, id):
             """Update the {} by id"""
@@ -211,7 +206,6 @@ def query_compounds(query):
 @api.route('/bioentities/compounds')
 class Chemicals(Resource):
     @api.marshal_with(biological_entity_schema)
-    @jwt_optional
     def get(self):
         """List all the compounds"""
         return query_compounds(CRUD.get_query(BiologicalEntity)).all()
@@ -264,7 +258,6 @@ def set_compounds_from_payload(data, medium):
 @api.route('/media')
 class MediaList(Resource):
     @api.marshal_with(medium_schema)
-    @jwt_optional
     def get(self):
         """List all the media and their recipes"""
         result = []
@@ -290,6 +283,7 @@ class MediaList(Resource):
     @api.marshal_with(medium_schema)
     @api.expect(medium_simple_schema)
     @jwt_required
+    @project_claims_verification
     def post(self):
         """Create a medium by defining the recipe (accepts an object or an array of objects)"""
         return post(self)
@@ -300,12 +294,12 @@ class MediaList(Resource):
 @api.param('id', 'The identifier')
 class Media(Resource):
     @api.marshal_with(medium_schema)
-    @jwt_optional
     def get(self, id):
         """Get the medium by id"""
         return serialized_medium_with_mass_concentrations(CRUD.get_by_id(Medium, id))
 
     @jwt_required
+    @project_claims_verification
     def delete(self, id):
         """Delete the medium by id - compounds will not be deleted"""
         CRUD.delete(Medium, id)
@@ -313,6 +307,7 @@ class Media(Resource):
     @api.marshal_with(medium_schema)
     @api.expect(medium_simple_schema)
     @jwt_required
+    @project_claims_verification
     def put(self, id):
         """Update the medium by id"""
         medium = CRUD.get_by_id(Medium, id)
@@ -328,7 +323,6 @@ class Media(Resource):
 @api.param('experiment_id', 'The experiment identifier')
 class ExperimentSampleList(Resource):
     @api.marshal_with(sample_schema)
-    @jwt_optional
     def get(self, experiment_id):
         """List all the samples for the given experiment"""
         return CRUD.get_by_id(Experiment, experiment_id).samples.all()
@@ -348,6 +342,7 @@ class ExperimentSampleList(Resource):
     @api.marshal_with(sample_schema)
     @api.expect(sample_schema)
     @jwt_required
+    @project_claims_verification
     def post(self, experiment_id):
         """Create a sample (accepts an object or an array of objects)"""
         return post(self, experiment_id)
@@ -358,12 +353,12 @@ class ExperimentSampleList(Resource):
 @api.param('id', 'The identifier')
 class Samples(Resource):
     @api.marshal_with(sample_schema)
-    @jwt_optional
     def get(self, id):
         """Get a sample by id"""
         return get_sample_by_id(id)
 
     @jwt_required
+    @project_claims_verification
     def delete(self, id):
         """Delete a sample by id - associated measurements will be deleted as well"""
         sample = get_sample_by_id(id)
@@ -373,6 +368,7 @@ class Samples(Resource):
     @api.marshal_with(medium_schema)
     @api.expect(medium_simple_schema)
     @jwt_required
+    @project_claims_verification
     def put(self, id):
         """Update a sample by id"""
         sample = get_sample_by_id(id)
@@ -390,7 +386,6 @@ class Samples(Resource):
 @api.route('/samples/<int:sample_id>/measurements')
 class SampleMeasurementList(Resource):
     @api.marshal_with(measurement_schema)
-    @jwt_optional
     def get(self, sample_id):
         """List all the measurements for the given sample"""
         sample = get_sample_by_id(sample_id)
@@ -411,6 +406,7 @@ class SampleMeasurementList(Resource):
     @api.marshal_with(measurement_schema)
     @api.expect(measurement_schema)
     @jwt_required
+    @project_claims_verification
     def post(self, sample_id):
         """Create measurements for the sample (accepts an object or an array of objects)"""
         return post(self, sample_id)
@@ -421,12 +417,12 @@ class SampleMeasurementList(Resource):
 @api.param('id', 'The identifier')
 class Measurements(Resource):
     @api.marshal_with(measurement_schema)
-    @jwt_optional
     def get(self, id):
         """Get a measurement by id"""
         return get_measurement_by_id(id)
 
     @jwt_required
+    @project_claims_verification
     def delete(self, id):
         """Delete a measurement by id"""
         measurement = get_measurement_by_id(id)
@@ -436,6 +432,7 @@ class Measurements(Resource):
     @api.marshal_with(measurement_schema)
     @api.expect(measurement_schema)
     @jwt_required
+    @project_claims_verification
     def put(self, id):
         """Update a measurement by id"""
         measurement = get_measurement_by_id(id)

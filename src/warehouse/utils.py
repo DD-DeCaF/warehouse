@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import json
-from flask_jwt_extended import get_jwt_claims
 from sqlalchemy import exc
 
 from warehouse.app import api, app, db
@@ -22,7 +21,7 @@ from warehouse.models import BiologicalEntity, Experiment, Measurement, Medium, 
 
 
 def filter_by_jwt_claims(model):
-    projects = get_jwt_claims().get('prj', [])
+    projects = g.jwt_claims.get('prj', [])
     return filter_by_projects(model, projects)
 
 

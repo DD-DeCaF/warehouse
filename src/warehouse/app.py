@@ -18,12 +18,11 @@
 import logging
 import logging.config
 
-from flask import Flask, request
+from flask import Flask, g, jsonify, request
 from flask_admin import Admin, form
 from flask_admin.contrib.sqla import ModelView
 from flask_basicauth import BasicAuth
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
@@ -31,17 +30,16 @@ from raven.contrib.flask import Sentry
 from werkzeug.contrib.fixers import ProxyFix
 
 from warehouse.settings import current_settings
+from warehouse import jwt
 
 
 app = Flask(__name__)
 app.config.from_object(current_settings())
-jwt = JWTManager(app)
 api = Api(
     title="warehouse",
     version="0.1.0",
     description="The storage for the experimental data used for modeling: omics, strains, media etc",
 )
-jwt._set_error_handler_callbacks(api)  # until https://github.com/noirbizarre/flask-restplus/issues/340 is fixed
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 admin = Admin(app, name='warehouse')
@@ -58,6 +56,9 @@ def init_app(application, interface):
         sentry = Sentry(dsn=application.config['SENTRY_DSN'], logging=True,
                         level=logging.WARNING)
         sentry.init_app(application)
+
+    # Add JWT middleware
+    jwt.init_app(application)
 
     # Add routes and resources.
     from warehouse import resources, models, utils
