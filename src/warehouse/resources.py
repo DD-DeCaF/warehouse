@@ -101,7 +101,8 @@ measurement_schema = api.model('Measurement', {
 
 @jwt.claims_verification_loader
 def project_claims_verification(claims):
-    return api.payload is None or ('project_id' not in api.payload) or ('prj' in claims and api.payload['project_id'] in claims['prj'])
+    return api.payload is None or ('project_id' not in api.payload) or ('prj' in claims and
+                                                                        api.payload['project_id'] in claims['prj'])
 
 
 def post(obj, *args, **kwargs):
@@ -248,7 +249,8 @@ class NotCompound(Exception):
 # TODO: make a copy if the compounds are from the different project
 def set_compounds_from_payload(data, medium):
     compound_dict = {c['id']: c['mass_concentration'] for c in data['compounds']}
-    entities = query_compounds(filter_by_jwt_claims(BiologicalEntity)).filter(BiologicalEntity.id.in_(compound_dict.keys()))
+    entities = query_compounds(filter_by_jwt_claims(BiologicalEntity)).filter(
+        BiologicalEntity.id.in_(compound_dict.keys()))
     if entities.count() < len(data['compounds']):
         raise NotCompound
     medium.compounds = entities.all()

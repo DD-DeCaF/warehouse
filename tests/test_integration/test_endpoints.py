@@ -246,7 +246,8 @@ def test_sample(client, tokens):
         sample_info['medium_id'] = medium_id
         sample_info['strain_id'] = strain_id
         permissions = list(set(permissions))
-        resp = client.post('/experiments/{}/samples'.format(experiment_id), data=json.dumps(sample_info), headers=headers)
+        resp = client.post('/experiments/{}/samples'.format(experiment_id), data=json.dumps(sample_info),
+                           headers=headers)
         if len(permissions) == 1 and permissions[0] == 'correct':
             assert resp.status_code == 200
             new_sample = json.loads(resp.get_data())
