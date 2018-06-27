@@ -14,17 +14,13 @@
 # limitations under the License.
 
 """Implement RESTful API endpoints using resources."""
-from flask_jwt_extended import (
-    create_access_token, get_jwt_claims, jwt_optional, jwt_required)
+from flask_jwt_extended import jwt_optional, jwt_required
 from flask_restplus import Resource, fields, marshal_with_field
 
-from warehouse.app import api, app, db, jwt
+from warehouse.app import api, db, jwt
 from warehouse.models import (
-    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium,
-    Namespace, Organism, Sample, Strain, Unit)
-from warehouse.utils import (
-    CRUD, constraint_check, filter_by_jwt_claims, get_measurement_by_id,
-    get_sample_by_id)
+    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium, Namespace, Organism, Sample, Strain, Unit)
+from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_measurement_by_id, get_sample_by_id
 
 
 base_schema = {
