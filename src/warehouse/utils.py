@@ -32,7 +32,7 @@ def filter_by_projects(model, projects):
 def get_object(model, object_id):
     obj = filter_by_jwt_claims(model).filter_by(id=object_id).first()
     if obj is None:
-        api.abort(404, "{} {} doesn't exist".format(model, object_id))
+        api.abort(404, "{} {} doesn't exist".format(model.__name__, object_id))
     return obj
 
 

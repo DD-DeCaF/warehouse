@@ -17,8 +17,22 @@
 
 import os
 
+import requests
+
 
 __all__ = ("Development", "Testing", "Production")
+
+
+def current_settings():
+    """Return the appropriate configuration object based on the environment."""
+    if os.environ['ENVIRONMENT'] in ['production', 'staging']:
+        return Production()
+    elif os.environ['ENVIRONMENT'] == 'testing':
+        return Testing()
+    elif os.environ['ENVIRONMENT'] == 'development':
+        return Development()
+    else:
+        raise KeyError(f"Unknown environment '{os.environ['ENVIRONMENT']}'")
 
 
 class Default(object):
@@ -86,7 +100,9 @@ class Development(Default):
 class Testing(Default):
     """Testing environment configuration."""
 
-    pass
+    def __init__(self):
+        super().__init__()
+        self.TESTING = True
 
 
 class Production(Default):
@@ -103,3 +119,4 @@ class Production(Default):
         self.DEBUG = False
         self.SECRET_KEY = os.environ['SECRET_KEY']
         self.LOGGING['root']['level'] = 'INFO'
+        self.JWT_PUBLIC_KEY = requests.get(os.environ['IAM_KEYS']).json()["keys"][0]["n"]

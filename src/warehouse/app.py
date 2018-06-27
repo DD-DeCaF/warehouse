@@ -17,9 +17,6 @@
 
 import logging
 import logging.config
-import os
-
-import requests
 
 from flask import Flask, request
 from flask_cors import CORS
@@ -31,27 +28,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from raven.contrib.flask import Sentry
+from werkzeug.contrib.fixers import ProxyFix
 
-
-def fetch_jwt_public_key():
-    return requests.get(os.environ['IAM_KEYS']).json()["keys"][0]["n"]
+from warehouse.settings import current_settings
 
 
 app = Flask(__name__)
-if os.environ["ENVIRONMENT"] == "production":
-    from warehouse.settings import Production
-
-    app.config.from_object(Production())
-    app.config['JWT_PUBLIC_KEY'] = fetch_jwt_public_key()
-elif os.environ["ENVIRONMENT"] == "testing":
-    from warehouse.settings import Testing
-
-    app.config.from_object(Testing())
-    app.testing = True
-else:
-    from warehouse.settings import Development
-
-    app.config.from_object(Development())
+app.config.from_object(current_settings())
 jwt = JWTManager(app)
 api = Api(
     title="warehouse",
@@ -67,12 +50,8 @@ basic_auth = BasicAuth(app)
 
 def init_app(application, interface):
     """Initialize the main app with config information and routes."""
-    # Configure logging
-    # The flask logger, when created, disables existing loggers. The following
-    # statement ensures the flask logger is created, so that it doesn't disable
-    # our loggers later when it is first accessed.
-    application.logger
     logging.config.dictConfig(application.config['LOGGING'])
+    application.wsgi_app = ProxyFix(application.wsgi_app)
 
     # Configure Sentry
     if application.config['SENTRY_DSN']:

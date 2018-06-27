@@ -23,10 +23,12 @@ spec:
         env:
         - name: ENVIRONMENT
           value: production
+        - name: SCRIPT_NAME
+          value: /warehouse
         - name: FLASK_APP
           value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
-          value: "http://localhost,https://api.dd-decaf.eu,https://api-staging.dd-decaf.eu,https://app.dd-decaf.eu,https://staging.dd-decaf.eu"
+          value: "https://app.dd-decaf.eu,http://localhost:4200"
         - name: IAM_KEYS
           value: "http://iam-production/iam/keys"
         - name: POSTGRES_HOST
@@ -116,11 +118,13 @@ spec:
         - containerPort: 8000
         env:
         - name: ENVIRONMENT
-          value: production
+          value: staging
+        - name: SCRIPT_NAME
+          value: /warehouse
         - name: FLASK_APP
           value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
-          value: "http://localhost,https://api.dd-decaf.eu,https://api-staging.dd-decaf.eu,https://app.dd-decaf.eu,https://staging.dd-decaf.eu"
+          value: "http://staging.dd-decaf.eu,http://localhost:4200"
         - name: IAM_KEYS
           value: "http://iam-staging/iam/keys"
         - name: POSTGRES_HOST
