@@ -81,11 +81,15 @@ def add_media_from_file(file_object):
     for line in file_object:
         obj = json.loads(line)
         composition = dict(zip(obj['compounds'], obj['mass_concentrations']))
-        medium = Medium(
-            id=obj['id'],
+        medium_obj = dict(
             project_id=obj['project_id'],
             name=obj['name'],
             ph=obj['ph'],
+        )
+        if 'id' in obj:
+            medium_obj['id'] = obj['id']
+        medium = Medium(
+            **medium_obj
         )
         medium.compounds = BiologicalEntity.query.filter(BiologicalEntity.id.in_(obj['compounds'])).all()
         db.session.add(medium)
