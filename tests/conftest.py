@@ -25,10 +25,6 @@ from warehouse.commands import populate
 from warehouse.models import db as db_
 
 
-PROJECTS1 = [1, 2]
-PROJECTS2 = [4]
-
-
 @pytest.fixture(scope="session")
 def app():
     """Provide an initialized Flask for use in certain test cases."""
@@ -56,7 +52,9 @@ def db(app):
 @pytest.fixture(scope="session")
 def tokens(app):
     """Provides two tokens with different claims to test the permissions"""
+    PROJECTS1 = {1: 'admin', 2: 'admin'}
+    PROJECTS2 = {4: 'admin'}
     return {
-        jwt.encode({'prj': PROJECTS1}, app.config['JWT_PRIVATE_KEY'], 'RS512'): PROJECTS1,
-        jwt.encode({'prj': PROJECTS2}, app.config['JWT_PRIVATE_KEY'], 'RS512'): PROJECTS2,
+        jwt.encode({'prj': PROJECTS1}, app.config['JWT_PRIVATE_KEY'], 'RS512'): list(PROJECTS1.keys()),
+        jwt.encode({'prj': PROJECTS2}, app.config['JWT_PRIVATE_KEY'], 'RS512'): list(PROJECTS2.keys()),
     }
