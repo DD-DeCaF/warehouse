@@ -71,7 +71,13 @@ def jwt_require_claim(project_id, required_level):
     :param required_level: The required access level (admin, write or read)
     :return: None
     """
-    if required_level not in ('admin', 'write', 'read'):
+    ACCESS_LEVELS = {
+        'admin': 3,
+        'write': 2,
+        'read': 1,
+    }
+
+    if required_level not in ACCESS_LEVELS.keys():
         raise ValueError(f"Invalid claim level '{required_level}'")
 
     logger.debug(f"Looking for '{required_level}' access to project '{project_id}' in claims '{g.jwt_claims}'")
@@ -88,12 +94,5 @@ def jwt_require_claim(project_id, required_level):
         abort(403, "You do not have access to the requested resource")
 
     # The given project id is included in the claims; verify that the access level is sufficient
-    if required_level == 'read':
-        authorized = True
-    elif required_level == 'write' and claim_level in ('admin', 'write'):
-        authorized = True
-    elif required_level == 'admin' and claim_level == 'admin':
-        authorized = True
-
-    if not authorized:
+    if ACCESS_LEVELS[claim_level] < ACCESS_LEVELS[required_level]:
         abort(403, f"This operation requires access level '{required_level}', your access level is '{claim_level}'")
