@@ -21,7 +21,7 @@ from warehouse.models import BiologicalEntity, Experiment, Measurement, Medium, 
 
 
 def filter_by_jwt_claims(model):
-    projects = g.jwt_claims.get('prj', [])
+    projects = [int(id) for id in g.jwt_claims['prj'].keys()]
     return filter_by_projects(model, projects)
 
 
@@ -147,6 +147,8 @@ class CRUD(object):
         if check_permissions is None:
             check_permissions = {}
         for field, new_value in data.items():
+            # TODO: verify that linked object is in the same project - if not, it should probably be copied and not
+            # linked
             if field in check_permissions and new_value is not None:
                 if field == 'sample_id':
                     get_sample_by_id(new_value)

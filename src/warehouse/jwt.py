@@ -60,12 +60,40 @@ def jwt_required(function):
     return wrapper
 
 
-def project_claims_verification(function):
-    from warehouse.resources import api
-    @wraps(function)
-    def wrapper(*args, **kwargs):
-        if api.payload is not None and 'project_id' in api.payload:
-            if api.payload['project_id'] not in g.jwt_claims['prj']:
-                return {'error': f"No write access to project '{api.payload['project_id']}'"}, 403
-        return function(*args, **kwargs)
-    return wrapper
+def jwt_require_claim(project_id, required_level):
+    """
+    Verify that the current user has access to the given project id, and that their access level is equal to or higher
+    than the given required level.
+
+    Aborts the request if the user does not have sufficient access.
+
+    :param project_id: The project ID to verify access for
+    :param required_level: The required access level (admin, write or read)
+    :return: None
+    """
+    if required_level not in ('admin', 'write', 'read'):
+        raise ValueError(f"Invalid claim level '{required_level}'")
+
+    logger.debug(f"Looking for '{required_level}' access to project '{project_id}' in claims '{g.jwt_claims}'")
+
+    # Nobody can write to public projects
+    if project_id is None and required_level != 'read':
+        abort(403, "Public data can not be modified")
+
+    try:
+        authorized = False
+        claim_level = g.jwt_claims['prj'][str(project_id)]
+    except KeyError:
+        # The given project id is not included in the users claims
+        abort(403, "You do not have access to the requested resource")
+
+    # The given project id is included in the claims; verify that the access level is sufficient
+    if required_level == 'read':
+        authorized = True
+    elif required_level == 'write' and claim_level in ('admin', 'write'):
+        authorized = True
+    elif required_level == 'admin' and claim_level == 'admin':
+        authorized = True
+
+    if not authorized:
+        abort(403, f"This operation requires access level '{required_level}', your access level is '{claim_level}'")
