@@ -35,13 +35,13 @@ style: flake8 isort license
 ## Run the tests.
 test:
 	-docker-compose run --rm -e ENVIRONMENT=testing web \
-		/bin/sh -c "pytest -s --cov=src/warehouse tests"
+		pytest --cov=src/warehouse tests
 
 ## Run the tests and report coverage (see https://docs.codecov.io/docs/testing-with-docker).
 test-travis:
 	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
 	docker-compose run --rm -e ENVIRONMENT=testing $(ci_env)  web \
-		/bin/sh -c "pytest -s --cov=src/warehouse tests && codecov"
+		/bin/sh -c "pytest --cov=src/warehouse tests && codecov"
 
 ## Init the alembic
 init:
