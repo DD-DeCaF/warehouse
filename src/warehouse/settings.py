@@ -85,6 +85,7 @@ class Default(object):
         self.JWT_ACCESS_TOKEN_EXPIRES = False
         self.BASIC_AUTH_USERNAME = os.environ['BASIC_AUTH_USERNAME']
         self.BASIC_AUTH_PASSWORD = os.environ['BASIC_AUTH_PASSWORD']
+        self.JWT_PUBLIC_KEY = requests.get(f"{os.environ['IAM_API']}/keys").json()["keys"][0]
 
 
 class Development(Default):
@@ -118,4 +119,4 @@ class Production(Default):
         self.DEBUG = False
         self.SECRET_KEY = os.environ['SECRET_KEY']
         self.LOGGING['root']['level'] = 'INFO'
-        self.JWT_PUBLIC_KEY = requests.get(os.environ['IAM_KEYS']).json()["keys"][0]
+        self.JWT_PUBLIC_KEY = requests.get(f"{os.environ['IAM_API']}/keys").json()["keys"][0]
