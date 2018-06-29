@@ -21,6 +21,8 @@ from jose import jwt
 from warehouse.app import api
 from warehouse.app import app as app_
 from warehouse.app import init_app
+from warehouse.commands import populate
+from warehouse.models import db as db_
 
 
 PROJECTS1 = [1, 2]
@@ -39,6 +41,16 @@ def client(app):
     """Provide a Flask test client to be used by almost all test cases."""
     with app.test_client() as client:
         yield client
+
+
+@pytest.fixture(scope="session")
+def db(app):
+    """Provide a database session with tables created, populated with the default fixtures."""
+    db_.create_all()
+    populate()
+    yield db_
+    db_.session.remove()
+    db_.drop_all()
 
 
 @pytest.fixture(scope="session")

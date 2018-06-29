@@ -68,7 +68,7 @@ def test_docs(client):
 
 
 @mark.parametrize('endpoint', ENDPOINTS)
-def test_get_all(client, tokens, endpoint):
+def test_get_all(client, db, tokens, endpoint):
     """When all the objects are queried without token, only public data are returned.
     If the token is used, the data for the corresponding projects are returned along with the public data."""
     resp = client.get(endpoint)
@@ -84,7 +84,7 @@ def test_get_all(client, tokens, endpoint):
 
 
 @mark.parametrize('endpoint', ENDPOINTS)
-def test_get_one(client, tokens, endpoint):
+def test_get_one(client, db, tokens, endpoint):
     """When one object is queried with or without token return it only if it has the allowed project ID.
     Otherwise return 404 Not found."""
     public_data = json.loads(client.get(endpoint).get_data())
@@ -108,7 +108,7 @@ def test_get_one(client, tokens, endpoint):
 
 
 @mark.parametrize('pair', POST_SIMPLE)
-def test_post_put_delete(client, tokens, pair):
+def test_post_put_delete(client, db, tokens, pair):
     """POST request can only be made by an authorised user with the valid project id.
     Objects with empty project id cannot be created."""
     endpoint, new_obj = pair
@@ -147,7 +147,7 @@ def test_post_put_delete(client, tokens, pair):
                 assert resp.status_code == 409
 
 
-def test_cross_project_strain(client, tokens):
+def test_cross_project_strain(client, db, tokens):
     """If the modified object is linked to other objects, project IDs should correspond."""
     token1, token2 = tuple(tokens.keys())
     projects1, projects2 = tokens[token1], tokens[token2]
@@ -167,7 +167,7 @@ def test_cross_project_strain(client, tokens):
     assert resp.status_code == 404  # no access to the project the linked object belongs to
 
 
-def test_medium(client, tokens):
+def test_medium(client, db, tokens):
     """Medium endpoints"""
     token1, token2 = tuple(tokens.keys())
     projects1, projects2 = tokens[token1], tokens[token2]
