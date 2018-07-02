@@ -5,6 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile
     image: dddecaf/warehouse:${IMAGE_TAG:-latest}
+    depends_on:
+      - postgres
     networks:
       default:
       DD-DeCaF:
