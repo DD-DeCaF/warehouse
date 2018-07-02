@@ -107,6 +107,43 @@ def test_get_one(client, db, tokens, endpoint):
         assert resp.status_code == 404
 
 
+@mark.parametrize('endpoint', ENDPOINTS)
+def test_crud_public_data(client, db, tokens, endpoint):
+    """Public data (objects with empty project id) cannot be created."""
+    # GET list and single object should be allowed
+    response = client.get(f"{endpoint}")
+    assert response.status_code == 200
+    object_list = response.get_json()
+    object_id = object_list[0]['id']
+    response = client.get(f"{endpoint}/{object_id}")
+    assert response.status_code == 200
+    object_ = response.get_json()
+
+    # Copy object to use as public test object (project_id null)
+    new_object = copy(object_)
+    del new_object['id']
+    new_object['project_id'] = None
+
+    # Write operation are not allowed at all (401 Unauthorized) without token
+    response = client.post(f"{endpoint}", data=json.dumps(new_object))
+    assert response.status_code == 401
+    response = client.put(f"{endpoint}/{object_['id']}", data=json.dumps(object_))
+    assert response.status_code == 401
+    response = client.delete(f"{endpoint}/{object_['id']}")
+    assert response.status_code == 401
+
+    # Write operations are forbidden (403) with valid token
+    headers = get_headers(tokens_write[0]['token'])
+    # Not allowed to create public data
+    response = client.post(f"{endpoint}", data=json.dumps(new_object), headers=headers)
+    assert response.status_code == 403
+    # Not allowed to modify public data
+    response = client.put(f"{endpoint}/{object_['id']}", data=json.dumps(object_), headers=headers)
+    assert response.status_code == 403
+    response = client.delete(f"{endpoint}/{object_['id']}", headers=headers)
+    assert response.status_code == 403
+
+
 @mark.parametrize('pair', POST_SIMPLE)
 def test_post_put_delete(client, db, tokens, pair):
     """POST request can only be made by an authorised user with the valid project id.
@@ -117,15 +154,13 @@ def test_post_put_delete(client, db, tokens, pair):
             })
     assert resp.status_code == 401
     projects1, projects2 = tuple(tokens.values())
-    for project_id in projects1 + projects2 + [None]:
+    for project_id in projects1 + projects2:
         for token, projects in tokens.items():
             new_object = copy(new_obj)
             headers = get_headers(token)
             new_object['project_id'] = project_id
             resp = client.post(endpoint, data=json.dumps(new_object), headers=headers)
             if project_id not in projects:
-                assert resp.status_code == 403
-            elif project_id is None:
                 assert resp.status_code == 403
             else:
                 assert resp.status_code == 200
