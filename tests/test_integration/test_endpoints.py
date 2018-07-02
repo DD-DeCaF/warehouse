@@ -57,7 +57,7 @@ def get_headers(token, no_json=False):
 
 
 def get_count(client, endpoint, headers):
-    return len(json.loads(client.get(endpoint, headers=headers).get_data()))
+    return len(client.get(endpoint, headers=headers).get_json())
 
 
 def test_docs(client):
@@ -74,12 +74,12 @@ def test_get_all(client, db, tokens_read, endpoint):
     resp = client.get(endpoint)
     assert resp.status_code == 200
     assert resp.content_type == 'application/json'
-    results = json.loads(resp.get_data())
+    results = resp.get_json()
     assert set([i['project_id'] for i in results]) == {None}
     for token in tokens_read:
         resp = client.get(endpoint, headers={'Authorization': 'Bearer {}'.format(token['token'])})
         assert resp.status_code == 200
-        results = json.loads(resp.get_data())
+        results = resp.get_json()
         assert set([i['project_id'] for i in results]) <= set(token['projects'] + [None])
 
 
@@ -87,7 +87,7 @@ def test_get_all(client, db, tokens_read, endpoint):
 def test_get_one(client, db, tokens_read, endpoint):
     """When one object is queried with or without token return it only if it has the allowed project ID.
     Otherwise return 404 Not found."""
-    public_data = json.loads(client.get(endpoint).get_data())
+    public_data = client.get(endpoint).get_json()
     public_object = public_data[0]
     resp = client.get(endpoint + '/{}'.format(public_object['id']))
     assert resp.status_code == 200
@@ -95,13 +95,13 @@ def test_get_one(client, db, tokens_read, endpoint):
         headers = {'Authorization': 'Bearer {}'.format(token['token'])}
         resp = client.get(endpoint + '/{}'.format(public_object['id']), headers=headers)
         assert resp.status_code == 200
-        result = json.loads(resp.get_data())
+        result = resp.get_json()
         assert public_object == result
-        private_data = json.loads(client.get(endpoint, headers=headers).get_data())
+        private_data = client.get(endpoint, headers=headers).get_json()
         private_object = [d for d in private_data if d['project_id'] is not None][0]
         resp = client.get(endpoint + '/{}'.format(private_object['id']), headers=headers)
         assert resp.status_code == 200
-        result = json.loads(resp.get_data())
+        result = resp.get_json()
         assert private_object == result
         resp = client.get(endpoint + '/{}'.format(private_object['id']))
         assert resp.status_code == 404
@@ -165,12 +165,12 @@ def test_post_put_delete(client, db, tokens_admin, pair):
                 assert resp.status_code == 403
             else:
                 assert resp.status_code == 200
-                result = json.loads(resp.get_data())
+                result = resp.get_json()
                 assert {k: v for k, v in result.items() if k not in ['id', 'created', 'updated']} == new_object
                 new_object['name'] = 'PUT'
                 resp = client.put(endpoint + '/{}'.format(result['id']), data=json.dumps(new_object), headers=headers)
                 assert resp.status_code == 200
-                result = json.loads(resp.get_data())
+                result = resp.get_json()
                 assert result['name'] == new_object['name']
                 content_type = headers.pop('Content-Type')
                 count = get_count(client, endpoint, headers)
@@ -187,7 +187,7 @@ def test_cross_project_strain(client, db, tokens_write):
     """If the modified object is linked to other objects, project IDs should correspond."""
     token1, token2 = tokens_write
     headers = get_headers(token1['token'], no_json=True)
-    organisms1 = json.loads(client.get('/organisms', headers=headers).get_data())
+    organisms1 = client.get('/organisms', headers=headers).get_json()
     organism_id1 = [o for o in organisms1 if o['project_id'] is not None][0]['id']
     data = {'name': 'strain', 'genotype': '', 'parent_id': None, 'organism_id': organism_id1}
     headers = get_headers(token1['token'])
@@ -229,7 +229,7 @@ def test_medium(client, db, tokens_admin):
     medium_info['compounds'] = get_compounds(compounds_correct)
     resp = client.post('/media', data=json.dumps(medium_info), headers=headers)
     assert resp.status_code == 200
-    medium_id = json.loads(resp.get_data())['id']
+    medium_id = resp.get_json()['id']
 
     medium_info = {'id': medium_id, 'compounds': get_compounds([1, 2])}
     resp = client.put('/media/{}'.format(medium_id), data=json.dumps(medium_info), headers=headers)
@@ -242,7 +242,7 @@ def test_medium(client, db, tokens_admin):
 
     resp = client.get('/media/{}'.format(medium_id), headers=headers)
     assert resp.status_code == 200
-    assert len(json.loads(resp.get_data())['compounds']) == 2
+    assert len(resp.get_json()['compounds']) == 2
     resp = client.delete('/media/{}'.format(medium_id), headers=headers)
     assert resp.status_code == 200
     # Check that corresponding compounds are still available
@@ -254,7 +254,7 @@ def test_compounds(client):
     resp = client.get('/bioentities/compounds')
     assert resp.status_code == 200
     assert resp.content_type == 'application/json'
-    results = json.loads(resp.get_data())
+    results = resp.get_json()
     assert set([i['project_id'] for i in results]) == {None}
     assert set([i['type_id'] for i in results]) == {2}
 
@@ -275,7 +275,7 @@ def test_sample(db, client, tokens_admin):
                            headers=headers)
         if len(permissions) == 1 and permissions[0] == 'correct':
             assert resp.status_code == 200
-            new_sample = json.loads(resp.get_data())
+            new_sample = resp.get_json()
         else:
             assert resp.status_code == 404
     for item in itertools.chain(
@@ -292,10 +292,10 @@ def test_sample(db, client, tokens_admin):
     headers.pop('Content-Type')
     resp = client.get('/experiments/{}/samples'.format(new_sample['experiment_id']), headers=headers)
     assert resp.status_code == 200
-    assert len(json.loads(resp.get_data())) > 0
+    assert len(resp.get_json()) > 0
     resp = client.get('/samples/{}'.format(new_sample['id']), headers=headers)
     assert resp.status_code == 200
-    assert json.loads(resp.get_data()) == new_sample
+    assert resp.get_json() == new_sample
     resp = client.get('/samples/666', headers=headers)
     assert resp.status_code == 404
     resp = client.delete('/samples/{}'.format(new_sample['id']), headers=headers)
@@ -322,7 +322,7 @@ def test_measurements(db, client, tokens_admin):
                            headers=headers)
         if key == 'correct':
             assert resp.status_code == 200
-            obj = json.loads(resp.get_data())[0]
+            obj = resp.get_json()[0]
         else:
             assert resp.status_code == 404
     numerator = {'correct': 1, 'permissions': 5, 'not_existing': 666}
@@ -343,7 +343,7 @@ def test_measurements(db, client, tokens_admin):
 
     headers.pop('Content-Type')
     resp = client.get('/samples/{}/measurements'.format(sample['correct']), headers=headers)
-    assert len(json.loads(resp.get_data())) > 0
+    assert len(resp.get_json()) > 0
     assert resp.status_code == 200
 
     resp = client.delete('/measurements/{}'.format(obj['id']), headers=headers)
