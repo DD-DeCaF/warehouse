@@ -102,11 +102,10 @@ measurement_schema = api.model('Measurement', {
 def post(obj, *args, **kwargs):
     if isinstance(api.payload, dict):
         return obj.post_one(api.payload, *args, **kwargs)
-    result = []
-    if isinstance(api.payload, list):
-        for data in api.payload:
-            result.append(obj.post_one(data, *args, **kwargs))
-    return result
+    elif isinstance(api.payload, list):
+        return [obj.post_one(data, *args, **kwargs) for data in api.payload]
+    else:
+        raise ValueError(f"Unsupported API payload type '{type(api.payload)}'")
 
 
 def crud_class_factory(model, route, schema, name, name_plural=None, check_permissions=None):
