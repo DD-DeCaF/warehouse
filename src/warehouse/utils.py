@@ -15,6 +15,7 @@
 
 import json
 from sqlalchemy import exc
+from flask import g
 
 from warehouse.app import api, app, db
 from warehouse.models import BiologicalEntity, Experiment, Measurement, Medium, Sample
