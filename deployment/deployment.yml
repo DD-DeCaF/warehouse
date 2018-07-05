@@ -29,8 +29,8 @@ spec:
           value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
           value: "https://app.dd-decaf.eu,http://localhost:4200"
-        - name: IAM_KEYS
-          value: "http://iam-production/iam/keys"
+        - name: IAM_API
+          value: "http://iam-production/iam"
         - name: POSTGRES_HOST
           value: localhost
         - name: POSTGRES_PORT
@@ -125,8 +125,8 @@ spec:
           value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
           value: "http://staging.dd-decaf.eu,http://localhost:4200"
-        - name: IAM_KEYS
-          value: "http://iam-staging/iam/keys"
+        - name: IAM_API
+          value: "http://iam-staging/iam"
         - name: POSTGRES_HOST
           value: localhost
         - name: POSTGRES_PORT

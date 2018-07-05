@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from datetime import datetime
+
 from warehouse.app import db
 
 
@@ -121,7 +122,8 @@ class Experiment(TimestampMixin, db.Model):
 # TODO: info to put to columns (protocol, temperature, gas etc)
 class Sample(TimestampMixin, db.Model):
     experiment_id = db.Column(db.Integer, db.ForeignKey('experiment.id'), nullable=False)
-    experiment = db.relationship(Experiment, backref=db.backref('samples', cascade="all, delete-orphan", lazy='dynamic'))
+    experiment = db.relationship(Experiment, backref=db.backref('samples', cascade="all, delete-orphan",
+                                                                lazy='dynamic'))
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)

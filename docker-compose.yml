@@ -5,6 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile
     image: dddecaf/warehouse:${IMAGE_TAG:-latest}
+    depends_on:
+      - postgres
     networks:
       default:
       DD-DeCaF:
@@ -22,8 +24,12 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
+      - POSTGRES_DB_NAME=postgres
+      - POSTGRES_ENV_USERNAME=postgres
+      - POSTGRES_ENV_PASS=
       - BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME:-admin}
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
+      - IAM_API=https://api-staging.dd-decaf.eu/iam
     command: ["/bin/sh","-c","FLASK_APP=src/warehouse/wsgi.py flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
   postgres:
     image: postgres
@@ -32,10 +38,8 @@ services:
     volumes:
       - "warehouse:/var/lib/postgresql/data"
     networks:
-      default:
-      DD-DeCaF:
-        aliases:
-          - warehouse
+      - default
+
 
 # Additional services that the `web` service `depends_on` should usually only
 # be on the default network and not exposed on the general network, i.e.,

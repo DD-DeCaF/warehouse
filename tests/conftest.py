@@ -16,24 +16,21 @@
 """Provide session level fixtures."""
 
 import pytest
-
-from flask_jwt_extended import create_access_token
+from jose import jwt
 
 from warehouse.app import api
-from warehouse.app import jwt
 from warehouse.app import app as app_
 from warehouse.app import init_app
-
-
-PROJECTS1 = [1, 2]
-PROJECTS2 = [4]
+from warehouse.commands import populate
+from warehouse.models import db as db_
 
 
 @pytest.fixture(scope="session")
 def app():
     """Provide an initialized Flask for use in certain test cases."""
     init_app(app_, api)
-    return app_
+    with app_.app_context():
+        yield app_
 
 
 @pytest.fixture(scope="session")
@@ -44,13 +41,49 @@ def client(app):
 
 
 @pytest.fixture(scope="session")
-def tokens(app):
-    """Provides two tokens with different claims to test the permissions"""
-    @jwt.user_claims_loader
-    def add_claims_to_access_token(projects):
-        return {'prj': projects}
+def db(app):
+    """Provide a database session with tables created, populated with the default fixtures."""
+    db_.create_all()
+    populate()
+    yield db_
+    db_.session.remove()
+    db_.drop_all()
 
-    yield {
-        create_access_token(identity=PROJECTS1): PROJECTS1,
-        create_access_token(identity=PROJECTS2): PROJECTS2,
-    }
+
+@pytest.fixture(scope="session")
+def tokens_admin(app):
+    """Provides JWTs with admin claims to different projects"""
+    return [{
+        'token': jwt.encode({'prj': claims}, app.config['JWT_PRIVATE_KEY'], 'RS512'),
+        'claims': claims,
+        'projects': list(claims.keys()),
+    } for claims in [
+        {1: 'admin', 2: 'admin'},
+        {4: 'admin'},
+    ]]
+
+
+@pytest.fixture(scope="session")
+def tokens_write(app):
+    """Provides JWTs with write claims to different projects"""
+    return [{
+        'token': jwt.encode({'prj': claims}, app.config['JWT_PRIVATE_KEY'], 'RS512'),
+        'claims': claims,
+        'projects': list(claims.keys()),
+    } for claims in [
+        {1: 'write', 2: 'write'},
+        {4: 'write'},
+    ]]
+
+
+@pytest.fixture(scope="session")
+def tokens_read(app):
+    """Provides JWTs with read claims to different projects"""
+    return [{
+        'token': jwt.encode({'prj': claims}, app.config['JWT_PRIVATE_KEY'], 'RS512'),
+        'claims': claims,
+        'projects': list(claims.keys()),
+    } for claims in [
+        {1: 'read', 2: 'read'},
+        {4: 'read'},
+    ]]

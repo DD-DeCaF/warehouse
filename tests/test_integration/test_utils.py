@@ -17,8 +17,8 @@
 
 import pytest
 import werkzeug
-from warehouse import utils
-from warehouse import models
+
+from warehouse import models, utils
 
 
 def test_get_object():
