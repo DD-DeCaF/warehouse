@@ -13,14 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from flask_jwt_extended import get_jwt_claims
+import json
 from sqlalchemy import exc
-from warehouse.app import app, api, db, jwt
-from warehouse.models import Sample, Experiment, Measurement
+from flask import g
+
+from warehouse.app import api, app, db
+from warehouse.models import BiologicalEntity, Experiment, Measurement, Medium, Sample
 
 
 def filter_by_jwt_claims(model):
-    projects = get_jwt_claims().get('prj', [])
+    projects = [int(id) for id in g.jwt_claims['prj'].keys()]
     return filter_by_projects(model, projects)
 
 
@@ -31,7 +33,7 @@ def filter_by_projects(model, projects):
 def get_object(model, object_id):
     obj = filter_by_jwt_claims(model).filter_by(id=object_id).first()
     if obj is None:
-        api.abort(404, "{} {} doesn't exist".format(model, object_id))
+        api.abort(404, "{} {} doesn't exist".format(model.__name__, object_id))
     return obj
 
 
@@ -63,6 +65,43 @@ def get_measurement_by_id(measurement_id):
     return measurement
 
 
+def add_from_file(file_object, model):
+    if model.__tablename__ == 'medium':
+        return add_media_from_file(file_object)
+    app.logger.debug('Started loading the file')
+    for line in file_object:
+        obj = json.loads(line)
+        new_object = model(**obj)
+        db.session.add(new_object)
+        db.session.flush()
+    db.session.commit()
+    app.logger.debug('{}: {} objects in db'.format(model, model.query.count()))
+
+
+def add_media_from_file(file_object):
+    for line in file_object:
+        obj = json.loads(line)
+        composition = dict(zip(obj['compounds'], obj['mass_concentrations']))
+        medium_obj = dict(
+            project_id=obj['project_id'],
+            name=obj['name'],
+            ph=obj['ph'],
+        )
+        if 'id' in obj:
+            medium_obj['id'] = obj['id']
+        medium = Medium(
+            **medium_obj
+        )
+        medium.compounds = BiologicalEntity.query.filter(BiologicalEntity.id.in_(obj['compounds'])).all()
+        db.session.add(medium)
+        db.session.flush()
+        for c in medium.composition:
+            c.mass_concentration = composition[c.compound_id]
+        db.session.flush()
+    db.session.commit()
+    app.logger.debug('Medium: added, {} objects in db'.format(Medium.query.count()))
+
+
 class CRUD(object):
     @classmethod
     def get_query(cls, model):
@@ -73,15 +112,15 @@ class CRUD(object):
         return cls.get_query(model).all()
 
     @classmethod
-    def post(cls, model, check_permissions=None, project_id=True):
+    def post(cls, data, model, check_permissions=None, project_id=True):
         if project_id:
-            if api.payload.get('project_id', None) is None:
+            if data.get('project_id', None) is None:
                 api.abort(403, 'Project ID is not set')
             else:
-                obj = model(project_id=api.payload['project_id'])
+                obj = model(project_id=data['project_id'])
         else:
             obj = model()
-        cls.modify_object(obj, check_permissions=check_permissions)
+        cls.modify_object(data, obj, check_permissions=check_permissions)
         db.session.add(obj)
         constraint_check(db)
         return obj
@@ -97,18 +136,20 @@ class CRUD(object):
         constraint_check(db)
 
     @classmethod
-    def put(cls, model, id, check_permissions=None):
+    def put(cls, data, model, id, check_permissions=None):
         obj = get_object(model, id)
-        cls.modify_object(obj, check_permissions=check_permissions)
+        cls.modify_object(data, obj, check_permissions=check_permissions)
         db.session.merge(obj)
         constraint_check(db)
         return obj
 
     @classmethod
-    def modify_object(cls, obj, check_permissions=None):
+    def modify_object(cls, data, obj, check_permissions=None):
         if check_permissions is None:
             check_permissions = {}
-        for field, new_value in api.payload.items():
+        for field, new_value in data.items():
+            # TODO: verify that linked object is in the same project - if not, it should probably be copied and not
+            # linked
             if field in check_permissions and new_value is not None:
                 if field == 'sample_id':
                     get_sample_by_id(new_value)

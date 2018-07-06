@@ -1,0 +1,4 @@
+{"sample_id": 1, "datetime_start": "2010-02-11 11:02:57", "datetime_end": null, "numerator_id": 1, "denominator_id": null, "value": 60.5, "unit_id": 1}
+{"sample_id": 1, "datetime_start": "2010-02-11 11:00:00", "datetime_end": "2010-02-11 15:00:00", "numerator_id": 3, "denominator_id": 1, "value": 53, "unit_id": 2}
+{"sample_id": 3, "datetime_start": "2010-02-11 09:00:00", "datetime_end": null, "numerator_id": 6, "denominator_id": 3, "value": 666, "unit_id": 2}
+{"sample_id": 4, "datetime_start": "2010-02-11 06:00:00", "datetime_end": "2010-02-11 08:45:00", "numerator_id": 5, "denominator_id": null, "value": 0.0007, "unit_id": 1}

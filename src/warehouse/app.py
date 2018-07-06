@@ -17,56 +17,39 @@
 
 import logging
 import logging.config
-import os
-import requests
 
-from flask import Flask
+from flask import Flask, g, jsonify, request
+from flask_admin import Admin, form
+from flask_admin.contrib.sqla import ModelView
+from flask_basicauth import BasicAuth
 from flask_cors import CORS
+from flask_migrate import Migrate
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
 from raven.contrib.flask import Sentry
+from werkzeug.contrib.fixers import ProxyFix
 
-
-def fetch_jwt_public_key():
-    return requests.get(os.environ['IAM_KEYS']).json()["keys"][0]["n"]
+from warehouse.settings import current_settings
+from warehouse import jwt
 
 
 app = Flask(__name__)
-if os.environ["ENVIRONMENT"] == "production":
-    from warehouse.settings import Production
-
-    app.config.from_object(Production())
-    app.config['JWT_PUBLIC_KEY'] = fetch_jwt_public_key()
-elif os.environ["ENVIRONMENT"] == "testing":
-    from warehouse.settings import Testing
-
-    app.config.from_object(Testing())
-    app.testing = True
-else:
-    from warehouse.settings import Development
-
-    app.config.from_object(Development())
-jwt = JWTManager(app)
+app.config.from_object(current_settings())
 api = Api(
     title="warehouse",
     version="0.1.0",
     description="The storage for the experimental data used for modeling: omics, strains, media etc",
 )
-jwt._set_error_handler_callbacks(api)  # until https://github.com/noirbizarre/flask-restplus/issues/340 is fixed
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+admin = Admin(app, name='warehouse')
+basic_auth = BasicAuth(app)
 
 
 def init_app(application, interface):
     """Initialize the main app with config information and routes."""
-    # Configure logging
-    # The flask logger, when created, disables existing loggers. The following
-    # statement ensures the flask logger is created, so that it doesn't disable
-    # our loggers later when it is first accessed.
-    application.logger
     logging.config.dictConfig(application.config['LOGGING'])
+    application.wsgi_app = ProxyFix(application.wsgi_app)
 
     # Configure Sentry
     if application.config['SENTRY_DSN']:
@@ -74,9 +57,48 @@ def init_app(application, interface):
                         level=logging.WARNING)
         sentry.init_app(application)
 
+    # Add JWT middleware
+    jwt.init_app(application)
+
     # Add routes and resources.
-    from warehouse import resources, models
+    from warehouse import resources, models, utils
     interface.init_app(application)
+
+    class ProtectedModelView(ModelView):
+        page_size = 1000
+        form_excluded_columns = ['created', 'updated']
+        can_export = True
+        form_extra_fields = {
+            'file': form.FileUploadField(
+                'Bulk creation with a json file'
+            )
+        }
+
+        def create_model(self, form):
+            if form.file.data is not None:
+                utils.add_from_file(form.file.data, self.model)
+            else:
+                return super().create_model(form)
+            return True
+
+    @application.before_request
+    def restrict_admin():
+        if request.path.startswith(admin.url) and not basic_auth.authenticate():
+            return basic_auth.challenge()
+
+    for model in [
+        models.BiologicalEntity,
+        models.BiologicalEntityType,
+        models.Namespace,
+        models.Organism,
+        models.Medium,
+        models.Strain,
+        models.Unit,
+        models.Experiment,
+        models.Sample,
+        models.Measurement,
+    ]:
+        admin.add_view(ProtectedModelView(model, db.session))
 
     # Add CORS information for all resources.
     CORS(application)

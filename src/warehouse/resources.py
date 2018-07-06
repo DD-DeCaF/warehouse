@@ -15,18 +15,20 @@
 
 """Implement RESTful API endpoints using resources."""
 from flask_restplus import Resource, fields, marshal_with_field
-from flask_jwt_extended import jwt_required, jwt_optional, create_access_token, get_jwt_claims
 
-from warehouse.app import app, api, db, jwt
-from warehouse.models import Strain, Organism, Namespace, BiologicalEntityType, BiologicalEntity, Medium, Unit, \
-    Experiment, Sample, Measurement
-from warehouse.utils import CRUD, filter_by_jwt_claims, constraint_check, get_sample_by_id, get_measurement_by_id
+from warehouse.app import api, db
+from warehouse.jwt import jwt_required, jwt_require_claim
+from warehouse.models import (
+    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium, Namespace, Organism, Sample, Strain, Unit)
+from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_measurement_by_id, get_sample_by_id
 
 
 base_schema = {
     'project_id': fields.Integer,
     'id': fields.Integer,
     'name': fields.String,
+    'created': fields.DateTime,
+    'updated': fields.DateTime,
 }
 
 organism_schema = api.model('Organism', base_schema)
@@ -70,6 +72,8 @@ medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
 }})
 
 sample_schema = api.model('Sample', {
+    'created': fields.DateTime,
+    'updated': fields.DateTime,
     'id': fields.Integer,
     'experiment_id': fields.Integer,
     'name': fields.String,
@@ -78,9 +82,12 @@ sample_schema = api.model('Sample', {
     'aerobic': fields.Boolean,
     'strain_id': fields.Integer,
     'medium_id': fields.Integer,
+    'feed_medium_id': fields.Integer,
 })
 
 measurement_schema = api.model('Measurement', {
+    'created': fields.DateTime,
+    'updated': fields.DateTime,
     'id': fields.Integer,
     'sample_id': fields.Integer,
     'datetime_start': fields.DateTime,
@@ -92,9 +99,13 @@ measurement_schema = api.model('Measurement', {
 })
 
 
-@jwt.claims_verification_loader
-def project_claims_verification(claims):
-    return api.payload is None or ('project_id' not in api.payload) or ('prj' in claims and api.payload['project_id'] in claims['prj'])
+def post(obj, *args, **kwargs):
+    if isinstance(api.payload, dict):
+        return obj.post_one(api.payload, *args, **kwargs)
+    elif isinstance(api.payload, list):
+        return [obj.post_one(data, *args, **kwargs) for data in api.payload]
+    else:
+        raise ValueError(f"Unsupported API payload type '{type(api.payload)}'")
 
 
 def crud_class_factory(model, route, schema, name, name_plural=None, check_permissions=None):
@@ -110,11 +121,18 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
     @api.route(route)
     class List(Resource):
         @api.marshal_with(schema)
-        @jwt_optional
         @docstring(name_plural)
         def get(self):
             """List all the {}"""
+            # Note: claims are not checked, the query will be filtered by read access
             return CRUD.get(model)
+
+        def post_one(self, data):
+            """Create a {}"""
+            # TODO: logically, jwt claim check should occur after check for project_id
+            if 'project_id' in data:
+                jwt_require_claim(data['project_id'], 'write')
+            return CRUD.post(data, model, check_permissions=check_permissions)
 
         @api.response(403, 'Forbidden')
         @api.response(404, 'Not Found')
@@ -124,18 +142,19 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
         @jwt_required
         @docstring(name)
         def post(self):
-            """Create a {}"""
-            return CRUD.post(model, check_permissions=check_permissions)
+            """Create a {} (accepts an object or an array of objects)"""
+            # Note: claims will be checked later per instance posted
+            return post(self)
 
     @api.route(route + '/<int:id>')
     @api.response(404, 'Not Found')
     @api.param('id', 'The identifier')
     class Item(Resource):
         @api.marshal_with(schema)
-        @jwt_optional
         @docstring(name)
         def get(self, id):
             """Get the {} by id"""
+            # Note: claims are not checked, the query will be filtered by read access
             return CRUD.get_by_id(model, id)
 
         # TODO: archive instead of delete
@@ -144,6 +163,8 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
         @docstring(name)
         def delete(self, id):
             """Delete the {} by id"""
+            object_ = CRUD.get_by_id(model, id)
+            jwt_require_claim(object_.project_id, 'admin')
             CRUD.delete(model, id)
 
         @api.response(403, 'Forbidden')
@@ -154,7 +175,9 @@ def crud_class_factory(model, route, schema, name, name_plural=None, check_permi
         @docstring(name)
         def put(self, id):
             """Update the {} by id"""
-            return CRUD.put(model, id, check_permissions=check_permissions)
+            object_ = CRUD.get_by_id(model, id)
+            jwt_require_claim(object_.project_id, 'write')
+            return CRUD.put(api.payload, model, id, check_permissions=check_permissions)
 
     return List, Item
 
@@ -189,9 +212,9 @@ def query_compounds(query):
 @api.route('/bioentities/compounds')
 class Chemicals(Resource):
     @api.marshal_with(biological_entity_schema)
-    @jwt_optional
     def get(self):
         """List all the compounds"""
+        # Note: claims are not checked, the query will be filtered by read access
         return query_compounds(CRUD.get_query(BiologicalEntity)).all()
 
 
@@ -225,10 +248,11 @@ class NotCompound(Exception):
 
 
 # TODO: make a copy if the compounds are from the different project
-def set_compounds_from_payload(medium):
-    compound_dict = {c['id']: c['mass_concentration'] for c in api.payload['compounds']}
-    entities = query_compounds(filter_by_jwt_claims(BiologicalEntity)).filter(BiologicalEntity.id.in_(compound_dict.keys()))
-    if entities.count() < len(api.payload['compounds']):
+def set_compounds_from_payload(data, medium):
+    compound_dict = {c['id']: c['mass_concentration'] for c in data['compounds']}
+    entities = query_compounds(filter_by_jwt_claims(BiologicalEntity)).filter(
+        BiologicalEntity.id.in_(compound_dict.keys()))
+    if entities.count() < len(data['compounds']):
         raise NotCompound
     medium.compounds = entities.all()
     db.session.add(medium)
@@ -241,9 +265,9 @@ def set_compounds_from_payload(medium):
 @api.route('/media')
 class MediaList(Resource):
     @api.marshal_with(medium_schema)
-    @jwt_optional
     def get(self):
         """List all the media and their recipes"""
+        # Note: claims are not checked, the query will be filtered by read access
         result = []
         media = CRUD.get(Medium)
         for m in media:
@@ -251,21 +275,29 @@ class MediaList(Resource):
             result.append(serialized)
         return result
 
+    def post_one(self, data):
+        """Create one medium"""
+        # TODO: logically, jwt claim check should occur after check for project_id
+        if 'project_id' in data:
+            jwt_require_claim(data['project_id'], 'write')
+        medium = Medium(
+            project_id=data['project_id'],
+            name=data['name'],
+            ph=data['ph'],
+        )
+        try:
+            set_compounds_from_payload(data, medium)
+        except NotCompound:
+            api.abort(404, "No such compound")
+        return serialized_medium_with_mass_concentrations(medium)
+
     @api.marshal_with(medium_schema)
     @api.expect(medium_simple_schema)
     @jwt_required
     def post(self):
-        """Create a medium by defining the recipe"""
-        medium = Medium(
-            project_id=api.payload['project_id'],
-            name=api.payload['name'],
-            ph=api.payload['ph'],
-        )
-        try:
-            set_compounds_from_payload(medium)
-        except NotCompound:
-            api.abort(404, "No such compound")
-        return serialized_medium_with_mass_concentrations(medium)
+        """Create a medium by defining the recipe (accepts an object or an array of objects)"""
+        # Note: claims will be checked later per instance posted
+        return post(self)
 
 
 @api.route('/media/<int:id>')
@@ -273,7 +305,6 @@ class MediaList(Resource):
 @api.param('id', 'The identifier')
 class Media(Resource):
     @api.marshal_with(medium_schema)
-    @jwt_optional
     def get(self, id):
         """Get the medium by id"""
         return serialized_medium_with_mass_concentrations(CRUD.get_by_id(Medium, id))
@@ -281,6 +312,8 @@ class Media(Resource):
     @jwt_required
     def delete(self, id):
         """Delete the medium by id - compounds will not be deleted"""
+        medium = CRUD.get_by_id(Medium, id)
+        jwt_require_claim(medium.project_id, 'admin')
         CRUD.delete(Medium, id)
 
     @api.marshal_with(medium_schema)
@@ -289,8 +322,9 @@ class Media(Resource):
     def put(self, id):
         """Update the medium by id"""
         medium = CRUD.get_by_id(Medium, id)
+        jwt_require_claim(medium.project_id, 'write')
         try:
-            set_compounds_from_payload(medium)
+            set_compounds_from_payload(api.payload, medium)
         except NotCompound:
             api.abort(404, "No such compound")
         return serialized_medium_with_mass_concentrations(medium)
@@ -301,24 +335,30 @@ class Media(Resource):
 @api.param('experiment_id', 'The experiment identifier')
 class ExperimentSampleList(Resource):
     @api.marshal_with(sample_schema)
-    @jwt_optional
     def get(self, experiment_id):
         """List all the samples for the given experiment"""
         return CRUD.get_by_id(Experiment, experiment_id).samples.all()
+
+    def post_one(self, data, experiment_id):
+        """Create one sample"""
+        experiment = CRUD.get_by_id(Experiment, experiment_id)
+        jwt_require_claim(experiment.project_id, 'write')
+        data['experiment_id'] = experiment_id
+        sample = CRUD.post(data, Sample, check_permissions={
+            'strain_id': Strain,
+            'medium_id': Medium,
+            'feed_medium_id': Medium,
+            'experiment_id': Experiment
+        }, project_id=False)
+        return sample
 
     @api.marshal_with(sample_schema)
     @api.expect(sample_schema)
     @jwt_required
     def post(self, experiment_id):
-        """Create a sample"""
-        CRUD.get_by_id(Experiment, experiment_id)
-        api.payload['experiment_id'] = experiment_id
-        sample = CRUD.post(Sample, check_permissions={
-            'strain_id': Strain,
-            'medium_id': Medium,
-            'experiment_id': Experiment
-        }, project_id=False)
-        return sample
+        """Create a sample (accepts an object or an array of objects)"""
+        # Note: claims will be checked later per instance posted
+        return post(self, experiment_id)
 
 
 @api.route('/samples/<int:id>')
@@ -326,7 +366,6 @@ class ExperimentSampleList(Resource):
 @api.param('id', 'The identifier')
 class Samples(Resource):
     @api.marshal_with(sample_schema)
-    @jwt_optional
     def get(self, id):
         """Get a sample by id"""
         return get_sample_by_id(id)
@@ -335,6 +374,7 @@ class Samples(Resource):
     def delete(self, id):
         """Delete a sample by id - associated measurements will be deleted as well"""
         sample = get_sample_by_id(id)
+        jwt_require_claim(sample.experiment.project_id, 'admin')
         db.session.delete(sample)
         constraint_check(db)
 
@@ -344,10 +384,12 @@ class Samples(Resource):
     def put(self, id):
         """Update a sample by id"""
         sample = get_sample_by_id(id)
-        CRUD.modify_object(sample, check_permissions={
+        jwt_require_claim(sample.experiment.project_id, 'write')
+        CRUD.modify_object(api.payload, sample, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
-            'experiment_id': Experiment
+            'feed_medium_id': Medium,
+            'experiment_id': Experiment,
         })
         db.session.merge(sample)
         constraint_check(db)
@@ -357,20 +399,17 @@ class Samples(Resource):
 @api.route('/samples/<int:sample_id>/measurements')
 class SampleMeasurementList(Resource):
     @api.marshal_with(measurement_schema)
-    @jwt_optional
     def get(self, sample_id):
         """List all the measurements for the given sample"""
         sample = get_sample_by_id(sample_id)
         return sample.measurements.all()
 
-    @api.marshal_with(measurement_schema)
-    @api.expect(measurement_schema)
-    @jwt_required
-    def post(self, sample_id):
-        """Create a measurement for the sample"""
-        get_sample_by_id(sample_id)
-        api.payload['sample_id'] = sample_id
-        measurement = CRUD.post(Measurement, check_permissions={
+    def post_one(self, data, sample_id):
+        """Post one measurement"""
+        sample = get_sample_by_id(sample_id)
+        jwt_require_claim(sample.experiment.project_id, 'write')
+        data['sample_id'] = sample_id
+        measurement = CRUD.post(data, Measurement, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,
@@ -378,13 +417,20 @@ class SampleMeasurementList(Resource):
         }, project_id=False)
         return measurement
 
+    @api.marshal_with(measurement_schema)
+    @api.expect(measurement_schema)
+    @jwt_required
+    def post(self, sample_id):
+        """Create measurements for the sample (accepts an object or an array of objects)"""
+        # Note: claims will be checked later per instance posted
+        return post(self, sample_id)
+
 
 @api.route('/measurements/<int:id>')
 @api.response(404, 'Not found')
 @api.param('id', 'The identifier')
 class Measurements(Resource):
     @api.marshal_with(measurement_schema)
-    @jwt_optional
     def get(self, id):
         """Get a measurement by id"""
         return get_measurement_by_id(id)
@@ -393,6 +439,7 @@ class Measurements(Resource):
     def delete(self, id):
         """Delete a measurement by id"""
         measurement = get_measurement_by_id(id)
+        jwt_require_claim(measurement.sample.experiment.project_id, 'admin')
         db.session.delete(measurement)
         constraint_check(db)
 
@@ -402,7 +449,8 @@ class Measurements(Resource):
     def put(self, id):
         """Update a measurement by id"""
         measurement = get_measurement_by_id(id)
-        CRUD.modify_object(measurement, check_permissions={
+        jwt_require_claim(measurement.sample.experiment.project_id, 'write')
+        CRUD.modify_object(api.payload, measurement, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,

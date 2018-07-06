@@ -15,10 +15,11 @@
 
 """Test expected functioning of the OpenAPI docs endpoints."""
 
-import json
-import itertools
 import datetime
+import itertools
+import json
 from copy import copy
+
 from pytest import mark
 
 
@@ -56,7 +57,7 @@ def get_headers(token, no_json=False):
 
 
 def get_count(client, endpoint, headers):
-    return len(json.loads(client.get(endpoint, headers=headers).get_data()))
+    return len(client.get(endpoint, headers=headers).get_json())
 
 
 def test_docs(client):
@@ -67,73 +68,109 @@ def test_docs(client):
 
 
 @mark.parametrize('endpoint', ENDPOINTS)
-def test_get_all(client, tokens, endpoint):
+def test_get_all(client, db, tokens_read, endpoint):
     """When all the objects are queried without token, only public data are returned.
     If the token is used, the data for the corresponding projects are returned along with the public data."""
     resp = client.get(endpoint)
     assert resp.status_code == 200
     assert resp.content_type == 'application/json'
-    results = json.loads(resp.get_data())
+    results = resp.get_json()
     assert set([i['project_id'] for i in results]) == {None}
-    for token, projects in tokens.items():
-        resp = client.get(endpoint, headers={'Authorization': 'Bearer {}'.format(token)})
+    for token in tokens_read:
+        resp = client.get(endpoint, headers={'Authorization': 'Bearer {}'.format(token['token'])})
         assert resp.status_code == 200
-        results = json.loads(resp.get_data())
-        assert set([i['project_id'] for i in results]) <= set(projects + [None])
+        results = resp.get_json()
+        assert set([i['project_id'] for i in results]) <= set(token['projects'] + [None])
 
 
 @mark.parametrize('endpoint', ENDPOINTS)
-def test_get_one(client, tokens, endpoint):
+def test_get_one(client, db, tokens_read, endpoint):
     """When one object is queried with or without token return it only if it has the allowed project ID.
     Otherwise return 404 Not found."""
-    public_data = json.loads(client.get(endpoint).get_data())
+    public_data = client.get(endpoint).get_json()
     public_object = public_data[0]
     resp = client.get(endpoint + '/{}'.format(public_object['id']))
     assert resp.status_code == 200
-    for token, projects in tokens.items():
-        headers = {'Authorization': 'Bearer {}'.format(token)}
+    for token in tokens_read:
+        headers = {'Authorization': 'Bearer {}'.format(token['token'])}
         resp = client.get(endpoint + '/{}'.format(public_object['id']), headers=headers)
         assert resp.status_code == 200
-        result = json.loads(resp.get_data())
+        result = resp.get_json()
         assert public_object == result
-        private_data = json.loads(client.get(endpoint, headers=headers).get_data())
+        private_data = client.get(endpoint, headers=headers).get_json()
         private_object = [d for d in private_data if d['project_id'] is not None][0]
         resp = client.get(endpoint + '/{}'.format(private_object['id']), headers=headers)
         assert resp.status_code == 200
-        result = json.loads(resp.get_data())
+        result = resp.get_json()
         assert private_object == result
         resp = client.get(endpoint + '/{}'.format(private_object['id']))
         assert resp.status_code == 404
 
 
+@mark.parametrize('endpoint', ENDPOINTS)
+def test_crud_public_data(client, db, tokens_write, endpoint):
+    """Public data (objects with empty project id) cannot be created."""
+    # GET list and single object should be allowed
+    response = client.get(f"{endpoint}")
+    assert response.status_code == 200
+    object_list = response.get_json()
+    object_id = object_list[0]['id']
+    response = client.get(f"{endpoint}/{object_id}")
+    assert response.status_code == 200
+
+    # Use object for put/delete requests
+    object_ = response.get_json()
+
+    # Copy object to use as public test object (project_id null)
+    new_object = copy(object_)
+    del new_object['id']
+    new_object['project_id'] = None
+
+    # Write operation are not allowed at all (401 Unauthorized) without token
+    response = client.post(f"{endpoint}", data=json.dumps(new_object))
+    assert response.status_code == 401
+    response = client.put(f"{endpoint}/{object_['id']}", data=json.dumps(object_))
+    assert response.status_code == 401
+    response = client.delete(f"{endpoint}/{object_['id']}")
+    assert response.status_code == 401
+
+    # Write operations are forbidden (403) with valid token
+    headers = get_headers(tokens_write[0]['token'])
+    # Not allowed to create public data
+    response = client.post(f"{endpoint}", data=json.dumps(new_object), headers=headers)
+    assert response.status_code == 403
+    # Not allowed to modify public data
+    response = client.put(f"{endpoint}/{object_['id']}", data=json.dumps(object_), headers=headers)
+    assert response.status_code == 403
+    response = client.delete(f"{endpoint}/{object_['id']}", headers=headers)
+    assert response.status_code == 403
+
+
 @mark.parametrize('pair', POST_SIMPLE)
-def test_post_put_delete(client, tokens, pair):
+def test_post_put_delete(client, db, tokens_admin, pair):
     """POST request can only be made by an authorised user with the valid project id.
     Objects with empty project id cannot be created."""
     endpoint, new_obj = pair
-    resp = client.post(endpoint, data=json.dumps(new_obj), headers={
-                'Content-Type': 'application/json'
-            })
-    assert resp.status_code == 401
-    projects1, projects2 = tuple(tokens.values())
-    for project_id in projects1 + projects2 + [None]:
-        for token, projects in tokens.items():
+    project_ids = []
+    admin_tokens = [t for t in tokens_admin if all([level in ('admin',) for level in t['claims'].values()])]
+    for token in admin_tokens:
+        project_ids.extend(token['projects'])
+    for project_id in project_ids:
+        for token in admin_tokens:
             new_object = copy(new_obj)
-            headers = get_headers(token)
+            headers = get_headers(token['token'])
             new_object['project_id'] = project_id
             resp = client.post(endpoint, data=json.dumps(new_object), headers=headers)
-            if project_id not in projects:
-                assert resp.status_code == 400
-            elif project_id is None:
+            if project_id not in token['projects']:
                 assert resp.status_code == 403
             else:
                 assert resp.status_code == 200
-                result = json.loads(resp.get_data())
-                assert {k: v for k, v in result.items() if k not in ['id']} == new_object
+                result = resp.get_json()
+                assert {k: v for k, v in result.items() if k not in ['id', 'created', 'updated']} == new_object
                 new_object['name'] = 'PUT'
                 resp = client.put(endpoint + '/{}'.format(result['id']), data=json.dumps(new_object), headers=headers)
                 assert resp.status_code == 200
-                result = json.loads(resp.get_data())
+                result = resp.get_json()
                 assert result['name'] == new_object['name']
                 content_type = headers.pop('Content-Type')
                 count = get_count(client, endpoint, headers)
@@ -146,35 +183,29 @@ def test_post_put_delete(client, tokens, pair):
                 assert resp.status_code == 409
 
 
-def test_cross_project_strain(client, tokens):
+def test_cross_project_strain(client, db, tokens_write):
     """If the modified object is linked to other objects, project IDs should correspond."""
-    token1, token2 = tuple(tokens.keys())
-    projects1, projects2 = tokens[token1], tokens[token2]
-    headers = get_headers(token1, no_json=True)
-    organisms1 = json.loads(client.get('/organisms', headers=headers).get_data())
+    token1, token2 = tokens_write
+    headers = get_headers(token1['token'], no_json=True)
+    organisms1 = client.get('/organisms', headers=headers).get_json()
     organism_id1 = [o for o in organisms1 if o['project_id'] is not None][0]['id']
     data = {'name': 'strain', 'genotype': '', 'parent_id': None, 'organism_id': organism_id1}
-    headers = get_headers(token1)
+    headers = get_headers(token1['token'])
     resp = client.post('/strains', data=json.dumps(data), headers=headers)
     assert resp.status_code == 403  # nobody can create entities with empty project id
-    data['project_id'] = projects1[0]
+    data['project_id'] = token1['projects'][0]
     resp = client.post('/strains', data=json.dumps(data), headers=headers)
     assert resp.status_code == 200
-    data['project_id'] = projects2[0]
-    headers = get_headers(token2)
+    data['project_id'] = token2['projects'][0]
+    headers = get_headers(token2['token'])
     resp = client.post('/strains', data=json.dumps(data), headers=headers)
     assert resp.status_code == 404  # no access to the project the linked object belongs to
 
 
-def test_medium(client, tokens):
+def test_medium(client, db, tokens_admin):
     """Medium endpoints"""
-    token1, token2 = tuple(tokens.keys())
-    projects1, projects2 = tokens[token1], tokens[token2]
-    if 4 in projects1:
-        token1, token2 = token2, token1
-        projects1, projects2 = projects2, projects1
-    headers = get_headers(token1)
-    medium_info = {'project_id': projects1[0], 'name': 'medium1', 'ph': 3}
+    headers = get_headers(tokens_admin[0]['token'])
+    medium_info = {'project_id': tokens_admin[0]['projects'][0], 'name': 'medium1', 'ph': 3}
     compounds_permissions = [1, 2, 5]
     compounds_missing = [1, 666, 3]
     compounds_reactions = [3, 4, 7]
@@ -198,7 +229,7 @@ def test_medium(client, tokens):
     medium_info['compounds'] = get_compounds(compounds_correct)
     resp = client.post('/media', data=json.dumps(medium_info), headers=headers)
     assert resp.status_code == 200
-    medium_id = json.loads(resp.get_data())['id']
+    medium_id = resp.get_json()['id']
 
     medium_info = {'id': medium_id, 'compounds': get_compounds([1, 2])}
     resp = client.put('/media/{}'.format(medium_id), data=json.dumps(medium_info), headers=headers)
@@ -207,11 +238,11 @@ def test_medium(client, tokens):
     resp = client.put('/media/{}'.format(medium_id), data=json.dumps(medium_info), headers=headers)
     assert resp.status_code == 404
 
-    content_type = headers.pop('Content-Type')
+    headers.pop('Content-Type')
 
     resp = client.get('/media/{}'.format(medium_id), headers=headers)
     assert resp.status_code == 200
-    assert len(json.loads(resp.get_data())['compounds']) == 2
+    assert len(resp.get_json()['compounds']) == 2
     resp = client.delete('/media/{}'.format(medium_id), headers=headers)
     assert resp.status_code == 200
     # Check that corresponding compounds are still available
@@ -223,19 +254,14 @@ def test_compounds(client):
     resp = client.get('/bioentities/compounds')
     assert resp.status_code == 200
     assert resp.content_type == 'application/json'
-    results = json.loads(resp.get_data())
+    results = resp.get_json()
     assert set([i['project_id'] for i in results]) == {None}
     assert set([i['type_id'] for i in results]) == {2}
 
 
-def test_sample(client, tokens):
+def test_sample(db, client, tokens_admin):
     """Sample endpoints"""
-    token1, token2 = tuple(tokens.keys())
-    projects1, projects2 = tokens[token1], tokens[token2]
-    if 4 in projects1:
-        token1, token2 = token2, token1
-        projects1, projects2 = projects2, projects1
-    headers = get_headers(token1)
+    headers = get_headers(tokens_admin[0]['token'])
     sample_info = {'name': 'new', 'protocol': 'protocol', 'temperature': 38, 'aerobic': True}
     experiment = {'correct': 1, 'permissions': 3, 'not_existing': 666}
     medium = {'correct': 1, 'permissions': 2, 'not_existing': 666}
@@ -245,10 +271,11 @@ def test_sample(client, tokens):
         sample_info['medium_id'] = medium_id
         sample_info['strain_id'] = strain_id
         permissions = list(set(permissions))
-        resp = client.post('/experiments/{}/samples'.format(experiment_id), data=json.dumps(sample_info), headers=headers)
+        resp = client.post('/experiments/{}/samples'.format(experiment_id), data=json.dumps(sample_info),
+                           headers=headers)
         if len(permissions) == 1 and permissions[0] == 'correct':
             assert resp.status_code == 200
-            new_sample = json.loads(resp.get_data())
+            new_sample = resp.get_json()
         else:
             assert resp.status_code == 404
     for item in itertools.chain(
@@ -262,13 +289,13 @@ def test_sample(client, tokens):
             assert resp.status_code == 200
         else:
             assert resp.status_code == 404
-    content_type = headers.pop('Content-Type')
+    headers.pop('Content-Type')
     resp = client.get('/experiments/{}/samples'.format(new_sample['experiment_id']), headers=headers)
     assert resp.status_code == 200
-    assert len(json.loads(resp.get_data())) > 0
+    assert len(resp.get_json()) > 0
     resp = client.get('/samples/{}'.format(new_sample['id']), headers=headers)
     assert resp.status_code == 200
-    assert json.loads(resp.get_data()) == new_sample
+    assert resp.get_json() == new_sample
     resp = client.get('/samples/666', headers=headers)
     assert resp.status_code == 404
     resp = client.delete('/samples/{}'.format(new_sample['id']), headers=headers)
@@ -277,14 +304,9 @@ def test_sample(client, tokens):
     assert resp.status_code == 404
 
 
-def test_measurements(client, tokens):
+def test_measurements(db, client, tokens_admin):
     """Measurements endpoints"""
-    token1, token2 = tuple(tokens.keys())
-    projects1, projects2 = tokens[token1], tokens[token2]
-    if 4 in projects1:
-        token1, token2 = token2, token1
-        projects1, projects2 = projects2, projects1
-    headers = get_headers(token1)
+    headers = get_headers(tokens_admin[0]['token'])
     measurement_info = {
         'datetime_start': str(datetime.datetime(2018, 1, 1, 12)),
         'datetime_end': str(datetime.datetime(2018, 1, 1, 13)),
@@ -296,11 +318,11 @@ def test_measurements(client, tokens):
     sample = {'correct': 3, 'permissions': 4, 'not_existing': 666}
     for key, value in sample.items():
         resp = client.post('/samples/{}/measurements'.format(value),
-                           data=json.dumps(measurement_info),
+                           data=json.dumps([measurement_info]),
                            headers=headers)
         if key == 'correct':
             assert resp.status_code == 200
-            obj = json.loads(resp.get_data())
+            obj = resp.get_json()[0]
         else:
             assert resp.status_code == 404
     numerator = {'correct': 1, 'permissions': 5, 'not_existing': 666}
@@ -319,9 +341,9 @@ def test_measurements(client, tokens):
         else:
             assert resp.status_code == 404
 
-    content_type = headers.pop('Content-Type')
+    headers.pop('Content-Type')
     resp = client.get('/samples/{}/measurements'.format(sample['correct']), headers=headers)
-    assert len(json.loads(resp.get_data())) > 0
+    assert len(resp.get_json()) > 0
     assert resp.status_code == 200
 
     resp = client.delete('/measurements/{}'.format(obj['id']), headers=headers)
