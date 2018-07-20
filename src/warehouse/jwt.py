@@ -36,16 +36,18 @@ def init_app(app):
             g.jwt_claims = {'prj': {}}
             return
 
-        try:
-            auth = request.headers['Authorization']
-            if not auth.startswith('Bearer '):
-                raise ValueError("Expected Bearer token authentication")
+        auth = request.headers['Authorization']
+        if not auth.startswith('Bearer '):
+            g.jwt_valid = False
+            g.jwt_claims = {'prj': {}}
+            return
 
+        try:
             _, token = auth.split(' ', 1)
             g.jwt_claims = jwt.decode(token, app.config['JWT_PUBLIC_KEY'], 'RS512')
             g.jwt_valid = True
             logger.debug(f"JWT claims accepted: {g.jwt_claims}")
-        except (ValueError, jwt.JWTError, jwt.ExpiredSignatureError, jwt.JWTClaimsError) as e:
+        except (jwt.JWTError, jwt.ExpiredSignatureError, jwt.JWTClaimsError) as e:
             abort(401, f"JWT authentication failed: {e}")
 
 
