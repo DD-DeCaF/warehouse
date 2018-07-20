@@ -63,7 +63,7 @@ downgrade:
 	docker-compose run --rm -e ENVIRONMENT=development web \
 		/bin/sh -c "flask db downgrade $(args)"
 
-## Downgrade the database
+## Install fixtures
 fixture:
 	docker-compose run --rm -e ENVIRONMENT=development web \
 		/bin/sh -c "./src/manage.py fixtures populate"
