@@ -67,6 +67,14 @@ def test_docs(client):
     assert resp.content_type == "text/html; charset=utf-8"
 
 
+def test_admin(monkeypatch, client, app):
+    """Test that the flask-admin interface accepts authenticated requests"""
+    monkeypatch.setitem(app.config, 'BASIC_AUTH_USERNAME', 'giraffe')
+    monkeypatch.setitem(app.config, 'BASIC_AUTH_PASSWORD', 'secret')
+    resp = client.get("/admin/", headers={'Authorization': "Basic Z2lyYWZmZTpzZWNyZXQ="})
+    assert resp.status_code == 200
+
+
 @mark.parametrize('endpoint', ENDPOINTS)
 def test_get_all(client, db, tokens_read, endpoint):
     """When all the objects are queried without token, only public data are returned.
