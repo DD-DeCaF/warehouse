@@ -15,7 +15,7 @@
 from flask_script import Manager
 
 from warehouse.models import (
-    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium, Namespace, Organism, Sample, Strain, Unit)
+    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium, Namespace, Organism, Condition, Strain, Unit)
 from warehouse.utils import add_from_file
 
 
@@ -65,9 +65,9 @@ def experiments(filepath='fixtures/experiments.json'):
 
 
 @Fixtures.command
-def samples(filepath='fixtures/samples.json'):
+def conditions(filepath='fixtures/conditions.json'):
     with open(filepath, 'r') as f:
-        add_from_file(f, Sample)
+        add_from_file(f, Condition)
 
 
 @Fixtures.command
@@ -92,5 +92,5 @@ def populate():
     organisms()
     strains()
     experiments()
-    samples()
+    conditions()
     measurements()

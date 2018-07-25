@@ -18,7 +18,7 @@ from sqlalchemy import exc
 from flask import g
 
 from warehouse.app import api, app, db
-from warehouse.models import BiologicalEntity, Experiment, Measurement, Medium, Sample
+from warehouse.models import BiologicalEntity, Experiment, Measurement, Medium, Condition
 
 
 def filter_by_jwt_claims(model):
@@ -45,21 +45,21 @@ def constraint_check(db):
         api.abort(409, "Wrong data")
 
 
-def get_sample_by_id(sample_id):
-    sample = Sample.query.get(sample_id)
-    if sample is None:
-        api.abort(404, "No such sample")
-    query = filter_by_jwt_claims(Experiment).filter_by(id=sample.experiment.id)
+def get_condition_by_id(condition_id):
+    condition = Condition.query.get(condition_id)
+    if condition is None:
+        api.abort(404, "No such condition")
+    query = filter_by_jwt_claims(Experiment).filter_by(id=condition.experiment.id)
     if not query.count():
-        api.abort(404, "No such sample")
-    return sample
+        api.abort(404, "No such condition")
+    return condition
 
 
 def get_measurement_by_id(measurement_id):
     measurement = Measurement.query.get(measurement_id)
     if measurement is None:
         api.abort(404, "No such measurement")
-    query = filter_by_jwt_claims(Experiment).filter_by(id=measurement.sample.experiment.id)
+    query = filter_by_jwt_claims(Experiment).filter_by(id=measurement.condition.experiment.id)
     if not query.count():
         api.abort(404, "No such measurement")
     return measurement
@@ -151,8 +151,8 @@ class CRUD(object):
             # TODO: verify that linked object is in the same project - if not, it should probably be copied and not
             # linked
             if field in check_permissions and new_value is not None:
-                if field == 'sample_id':
-                    get_sample_by_id(new_value)
+                if field == 'condition_id':
+                    get_condition_by_id(new_value)
                 else:
                     get_object(check_permissions[field], new_value)
             if field != 'id' and field != 'project_id':

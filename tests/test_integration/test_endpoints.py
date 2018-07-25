@@ -267,23 +267,23 @@ def test_compounds(client):
     assert set([i['type_id'] for i in results]) == {2}
 
 
-def test_sample(db, client, tokens_admin):
-    """Sample endpoints"""
+def test_condition(db, client, tokens_admin):
+    """Condition endpoints"""
     headers = get_headers(tokens_admin[0]['token'])
-    sample_info = {'name': 'new', 'protocol': 'protocol', 'temperature': 38, 'aerobic': True}
+    condition_info = {'name': 'new', 'protocol': 'protocol', 'temperature': 38, 'aerobic': True}
     experiment = {'correct': 1, 'permissions': 3, 'not_existing': 666}
     medium = {'correct': 1, 'permissions': 2, 'not_existing': 666}
     strain = {'correct': 2, 'permissions': 3, 'not_existing': 666}
     for collection in itertools.product(experiment.items(), medium.items(), strain.items()):
         permissions, (experiment_id, medium_id, strain_id) = list(zip(*collection))
-        sample_info['medium_id'] = medium_id
-        sample_info['strain_id'] = strain_id
+        condition_info['medium_id'] = medium_id
+        condition_info['strain_id'] = strain_id
         permissions = list(set(permissions))
-        resp = client.post('/experiments/{}/samples'.format(experiment_id), data=json.dumps(sample_info),
+        resp = client.post('/experiments/{}/conditions'.format(experiment_id), data=json.dumps(condition_info),
                            headers=headers)
         if len(permissions) == 1 and permissions[0] == 'correct':
             assert resp.status_code == 200
-            new_sample = resp.get_json()
+            new_condition = resp.get_json()
         else:
             assert resp.status_code == 404
     for item in itertools.chain(
@@ -292,23 +292,23 @@ def test_sample(db, client, tokens_admin):
         zip(strain.items(), ['strain_id']*3)
     ):
         (permission, value), key = item
-        resp = client.put('/samples/{}'.format(new_sample['id']), data=json.dumps({key: value}), headers=headers)
+        resp = client.put('/condition/{}'.format(new_condition['id']), data=json.dumps({key: value}), headers=headers)
         if permission == 'correct':
             assert resp.status_code == 200
         else:
             assert resp.status_code == 404
     headers.pop('Content-Type')
-    resp = client.get('/experiments/{}/samples'.format(new_sample['experiment_id']), headers=headers)
+    resp = client.get('/experiments/{}/conditions'.format(new_condition['experiment_id']), headers=headers)
     assert resp.status_code == 200
     assert len(resp.get_json()) > 0
-    resp = client.get('/samples/{}'.format(new_sample['id']), headers=headers)
+    resp = client.get('/conditions/{}'.format(new_condition['id']), headers=headers)
     assert resp.status_code == 200
-    assert resp.get_json() == new_sample
-    resp = client.get('/samples/666', headers=headers)
+    assert resp.get_json() == new_condition
+    resp = client.get('/conditions/666', headers=headers)
     assert resp.status_code == 404
-    resp = client.delete('/samples/{}'.format(new_sample['id']), headers=headers)
+    resp = client.delete('/conditions/{}'.format(new_condition['id']), headers=headers)
     assert resp.status_code == 200
-    resp = client.delete('/samples/666', headers=headers)
+    resp = client.delete('/conditions/666', headers=headers)
     assert resp.status_code == 404
 
 
@@ -323,9 +323,9 @@ def test_measurements(db, client, tokens_admin):
         'numerator_id': 1,
         'denominator_id': None,
     }
-    sample = {'correct': 3, 'permissions': 4, 'not_existing': 666}
-    for key, value in sample.items():
-        resp = client.post('/samples/{}/measurements'.format(value),
+    condition = {'correct': 3, 'permissions': 4, 'not_existing': 666}
+    for key, value in condition.items():
+        resp = client.post('/conditions/{}/measurements'.format(value),
                            data=json.dumps([measurement_info]),
                            headers=headers)
         if key == 'correct':
@@ -335,13 +335,13 @@ def test_measurements(db, client, tokens_admin):
             assert resp.status_code == 404
     numerator = {'correct': 1, 'permissions': 5, 'not_existing': 666}
     denominator = {'correct': None, 'permissions': 5, 'not_existing': 666}
-    for collection in itertools.product(numerator.items(), denominator.items(), sample.items()):
-        permissions, (numerator_id, denominator_id, sample_id) = list(zip(*collection))
+    for collection in itertools.product(numerator.items(), denominator.items(), condition.items()):
+        permissions, (numerator_id, denominator_id, condition_id) = list(zip(*collection))
         permissions = list(set(permissions))
         data = {
             'numerator_id': numerator_id,
             'denominator_id': denominator_id,
-            'sample_id': sample_id,
+            'condition_id':condition_id,
         }
         resp = client.put('/measurements/{}'.format(obj['id']), data=json.dumps(data), headers=headers)
         if len(permissions) == 1 and permissions[0] == 'correct':
@@ -350,7 +350,7 @@ def test_measurements(db, client, tokens_admin):
             assert resp.status_code == 404
 
     headers.pop('Content-Type')
-    resp = client.get('/samples/{}/measurements'.format(sample['correct']), headers=headers)
+    resp = client.get('/conditions/{}/measurements'.format(condition['correct']), headers=headers)
     assert len(resp.get_json()) > 0
     assert resp.status_code == 200
 

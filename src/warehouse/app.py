@@ -95,7 +95,7 @@ def init_app(application, interface):
         models.Strain,
         models.Unit,
         models.Experiment,
-        models.Sample,
+        models.Condition,
         models.Measurement,
     ]:
         admin.add_view(ProtectedModelView(model, db.session))

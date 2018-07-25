@@ -19,8 +19,8 @@ from flask_restplus import Resource, fields, marshal_with_field
 from warehouse.app import api, db
 from warehouse.jwt import jwt_required, jwt_require_claim
 from warehouse.models import (
-    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium, Namespace, Organism, Sample, Strain, Unit)
-from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_measurement_by_id, get_sample_by_id
+    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium, Namespace, Organism, Condition, Strain, Unit)
+from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_measurement_by_id, get_condition_by_id
 
 
 base_schema = {
@@ -71,7 +71,7 @@ medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
     'compounds': fields.List(fields.Nested(medium_compound_simple_schema)),
 }})
 
-sample_schema = api.model('Sample', {
+condition_schema = api.model('Condition', {
     'created': fields.DateTime,
     'updated': fields.DateTime,
     'id': fields.Integer,
@@ -89,7 +89,7 @@ measurement_schema = api.model('Measurement', {
     'created': fields.DateTime,
     'updated': fields.DateTime,
     'id': fields.Integer,
-    'sample_id': fields.Integer,
+    'condition_id': fields.Integer,
     'datetime_start': fields.DateTime,
     'datetime_end': fields.DateTime,
     'numerator_id': fields.Integer,
@@ -330,100 +330,108 @@ class Media(Resource):
         return serialized_medium_with_mass_concentrations(medium)
 
 
-@api.route('/experiments/<int:experiment_id>/samples')
+@api.route('/experiments/<int:experiment_id>/conditions')
 @api.response(404, 'Not found')
 @api.param('experiment_id', 'The experiment identifier')
-class ExperimentSampleList(Resource):
-    @api.marshal_with(sample_schema)
+class ExperimentConditionList(Resource):
+    @api.marshal_with(condition_schema)
     def get(self, experiment_id):
-        """List all the samples for the given experiment"""
-        return CRUD.get_by_id(Experiment, experiment_id).samples.all()
+        """List all the conditions for the given experiment"""
+        return CRUD.get_by_id(Experiment, experiment_id).conditions.all()
 
     def post_one(self, data, experiment_id):
-        """Create one sample"""
+        """Create one condition"""
         experiment = CRUD.get_by_id(Experiment, experiment_id)
         jwt_require_claim(experiment.project_id, 'write')
         data['experiment_id'] = experiment_id
-        sample = CRUD.post(data, Sample, check_permissions={
+        condition = CRUD.post(data, Condition, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
             'feed_medium_id': Medium,
             'experiment_id': Experiment
         }, project_id=False)
-        return sample
+        return condition
 
-    @api.marshal_with(sample_schema)
-    @api.expect(sample_schema)
+    @api.marshal_with(condition_schema)
+    @api.expect(condition_schema)
     @jwt_required
     def post(self, experiment_id):
-        """Create a sample (accepts an object or an array of objects)"""
+        """Create a condition (accepts an object or an array of objects)"""
         # Note: claims will be checked later per instance posted
         return post(self, experiment_id)
 
 
-@api.route('/samples/<int:id>')
+@api.route('/conditions/<int:id>')
 @api.response(404, 'Not found')
 @api.param('id', 'The identifier')
-class Samples(Resource):
-    @api.marshal_with(sample_schema)
+class Conditions(Resource):
+    @api.marshal_with(condition_schema)
     def get(self, id):
-        """Get a sample by id"""
-        return get_sample_by_id(id)
+        """Get a condition by id"""
+        return get_condition_by_id(id)
 
     @jwt_required
     def delete(self, id):
-        """Delete a sample by id - associated measurements will be deleted as well"""
-        sample = get_sample_by_id(id)
-        jwt_require_claim(sample.experiment.project_id, 'admin')
-        db.session.delete(sample)
+        """
+        Delete a condition by id - associated measurements will be deleted
+        as well
+
+        """
+        condition = get_condition_by_id(id)
+        jwt_require_claim(condition.experiment.project_id, 'admin')
+        db.session.delete(condition)
         constraint_check(db)
 
     @api.marshal_with(medium_schema)
     @api.expect(medium_simple_schema)
     @jwt_required
     def put(self, id):
-        """Update a sample by id"""
-        sample = get_sample_by_id(id)
-        jwt_require_claim(sample.experiment.project_id, 'write')
-        CRUD.modify_object(api.payload, sample, check_permissions={
+        """Update a condition by id"""
+        condition = get_condition_by_id(id)
+        jwt_require_claim(condition.experiment.project_id, 'write')
+        CRUD.modify_object(api.payload, condition, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
             'feed_medium_id': Medium,
             'experiment_id': Experiment,
         })
-        db.session.merge(sample)
+        db.session.merge(condition)
         constraint_check(db)
-        return sample
+        return condition
 
 
-@api.route('/samples/<int:sample_id>/measurements')
-class SampleMeasurementList(Resource):
+@api.route('/conditions/<int:condition_id>/measurements')
+class ConditionMeasurementList(Resource):
     @api.marshal_with(measurement_schema)
-    def get(self, sample_id):
-        """List all the measurements for the given sample"""
-        sample = get_sample_by_id(sample_id)
-        return sample.measurements.all()
+    def get(self, condition_id):
+        """List all the measurements for the given condition"""
+        condition = get_condition_by_id(condition_id)
+        return condition.measurements.all()
 
-    def post_one(self, data, sample_id):
+    def post_one(self, data, condition_id):
         """Post one measurement"""
-        sample = get_sample_by_id(sample_id)
-        jwt_require_claim(sample.experiment.project_id, 'write')
-        data['sample_id'] = sample_id
+        condition = get_condition_by_id(condition_id)
+        jwt_require_claim(condition.experiment.project_id, 'write')
+        data['condition_id'] = condition_id
         measurement = CRUD.post(data, Measurement, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,
-            'sample_id': Sample,
+            'condition_id': Condition,
         }, project_id=False)
         return measurement
 
     @api.marshal_with(measurement_schema)
     @api.expect(measurement_schema)
     @jwt_required
-    def post(self, sample_id):
-        """Create measurements for the sample (accepts an object or an array of objects)"""
+    def post(self, condition_id):
+        """
+        Create measurements for the condition (accepts an object or an
+        array of objects)
+
+        """
         # Note: claims will be checked later per instance posted
-        return post(self, sample_id)
+        return post(self, condition_id)
 
 
 @api.route('/measurements/<int:id>')
@@ -439,7 +447,7 @@ class Measurements(Resource):
     def delete(self, id):
         """Delete a measurement by id"""
         measurement = get_measurement_by_id(id)
-        jwt_require_claim(measurement.sample.experiment.project_id, 'admin')
+        jwt_require_claim(measurement.condition.experiment.project_id, 'admin')
         db.session.delete(measurement)
         constraint_check(db)
 
@@ -449,12 +457,12 @@ class Measurements(Resource):
     def put(self, id):
         """Update a measurement by id"""
         measurement = get_measurement_by_id(id)
-        jwt_require_claim(measurement.sample.experiment.project_id, 'write')
+        jwt_require_claim(measurement.condition.experiment.project_id, 'write')
         CRUD.modify_object(api.payload, measurement, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,
-            'sample_id': Sample,
+            'condition_id': Condition,
         })
         db.session.merge(measurement)
         constraint_check(db)

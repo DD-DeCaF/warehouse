@@ -120,9 +120,9 @@ class Experiment(TimestampMixin, db.Model):
 
 # TODO: tags
 # TODO: info to put to columns (protocol, temperature, gas etc)
-class Sample(TimestampMixin, db.Model):
+class Condition(TimestampMixin, db.Model):
     experiment_id = db.Column(db.Integer, db.ForeignKey('experiment.id'), nullable=False)
-    experiment = db.relationship(Experiment, backref=db.backref('samples', cascade="all, delete-orphan",
+    experiment = db.relationship(Experiment, backref=db.backref('conditions', cascade="all, delete-orphan",
                                                                 lazy='dynamic'))
 
     id = db.Column(db.Integer, primary_key=True)
@@ -143,8 +143,8 @@ class Sample(TimestampMixin, db.Model):
 
 
 class Measurement(TimestampMixin, db.Model):
-    sample_id = db.Column(db.Integer, db.ForeignKey('sample.id'), nullable=False)
-    sample = db.relationship(Sample, backref=db.backref('measurements', cascade="all, delete-orphan", lazy='dynamic'))
+    condition_id = db.Column(db.Integer, db.ForeignKey('condition.id'), nullable=False)
+    condition = db.relationship(Condition, backref=db.backref('measurements', cascade="all, delete-orphan", lazy='dynamic'))
 
     id = db.Column(db.Integer, primary_key=True)
 
