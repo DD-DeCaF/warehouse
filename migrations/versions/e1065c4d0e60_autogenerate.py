@@ -17,9 +17,7 @@ depends_on = None
 
 
 def upgrade():
-    op.alter_column('biological_entity', 'namespace_id',
-                    existing_type=sa.INTEGER(),
-                    nullable=False)
+    pass
 
 
 def downgrade():

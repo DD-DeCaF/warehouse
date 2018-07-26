@@ -312,10 +312,10 @@ def test_condition(db, client, tokens_admin):
     assert resp.status_code == 404
 
 
-def test_measurements(db, client, tokens_admin):
-    """Measurements endpoints"""
+def test_samples(db, client, tokens_admin):
+    """Samples endpoints"""
     headers = get_headers(tokens_admin[0]['token'])
-    measurement_info = {
+    sample_info = {
         'datetime_start': str(datetime.datetime(2018, 1, 1, 12)),
         'datetime_end': str(datetime.datetime(2018, 1, 1, 13)),
         'value': 1,
@@ -325,8 +325,8 @@ def test_measurements(db, client, tokens_admin):
     }
     condition = {'correct': 3, 'permissions': 4, 'not_existing': 666}
     for key, value in condition.items():
-        resp = client.post('/conditions/{}/measurements'.format(value),
-                           data=json.dumps([measurement_info]),
+        resp = client.post('/conditions/{}/samples'.format(value),
+                           data=json.dumps([sample_info]),
                            headers=headers)
         if key == 'correct':
             assert resp.status_code == 200
@@ -343,16 +343,16 @@ def test_measurements(db, client, tokens_admin):
             'denominator_id': denominator_id,
             'condition_id':condition_id,
         }
-        resp = client.put('/measurements/{}'.format(obj['id']), data=json.dumps(data), headers=headers)
+        resp = client.put('/samples/{}'.format(obj['id']), data=json.dumps(data), headers=headers)
         if len(permissions) == 1 and permissions[0] == 'correct':
             assert resp.status_code == 200
         else:
             assert resp.status_code == 404
 
     headers.pop('Content-Type')
-    resp = client.get('/conditions/{}/measurements'.format(condition['correct']), headers=headers)
+    resp = client.get('/conditions/{}/samples'.format(condition['correct']), headers=headers)
     assert len(resp.get_json()) > 0
     assert resp.status_code == 200
 
-    resp = client.delete('/measurements/{}'.format(obj['id']), headers=headers)
+    resp = client.delete('/samples/{}'.format(obj['id']), headers=headers)
     assert resp.status_code == 200

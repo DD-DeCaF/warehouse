@@ -19,8 +19,8 @@ from flask_restplus import Resource, fields, marshal_with_field
 from warehouse.app import api, db
 from warehouse.jwt import jwt_required, jwt_require_claim
 from warehouse.models import (
-    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium, Namespace, Organism, Condition, Strain, Unit)
-from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_measurement_by_id, get_condition_by_id
+    BiologicalEntity, BiologicalEntityType, Experiment, Sample, Medium, Namespace, Organism, Condition, Strain, Unit)
+from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_sample_by_id, get_condition_by_id
 
 
 base_schema = {
@@ -85,7 +85,7 @@ condition_schema = api.model('Condition', {
     'feed_medium_id': fields.Integer,
 })
 
-measurement_schema = api.model('Measurement', {
+sample_schema = api.model('Sample', {
     'created': fields.DateTime,
     'updated': fields.DateTime,
     'id': fields.Integer,
@@ -373,7 +373,7 @@ class Conditions(Resource):
     @jwt_required
     def delete(self, id):
         """
-        Delete a condition by id - associated measurements will be deleted
+        Delete a condition by id - associated samples will be deleted
         as well
 
         """
@@ -400,33 +400,33 @@ class Conditions(Resource):
         return condition
 
 
-@api.route('/conditions/<int:condition_id>/measurements')
-class ConditionMeasurementList(Resource):
-    @api.marshal_with(measurement_schema)
+@api.route('/conditions/<int:condition_id>/samples')
+class ConditionSampleList(Resource):
+    @api.marshal_with(sample_schema)
     def get(self, condition_id):
-        """List all the measurements for the given condition"""
+        """List all the samples for the given condition"""
         condition = get_condition_by_id(condition_id)
-        return condition.measurements.all()
+        return condition.samples.all()
 
     def post_one(self, data, condition_id):
-        """Post one measurement"""
+        """Post one sample"""
         condition = get_condition_by_id(condition_id)
         jwt_require_claim(condition.experiment.project_id, 'write')
         data['condition_id'] = condition_id
-        measurement = CRUD.post(data, Measurement, check_permissions={
+        sample = CRUD.post(data, Sample, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,
             'condition_id': Condition,
         }, project_id=False)
-        return measurement
+        return sample
 
-    @api.marshal_with(measurement_schema)
-    @api.expect(measurement_schema)
+    @api.marshal_with(sample_schema)
+    @api.expect(sample_schema)
     @jwt_required
     def post(self, condition_id):
         """
-        Create measurements for the condition (accepts an object or an
+        Create samples for the condition (accepts an object or an
         array of objects)
 
         """
@@ -434,36 +434,36 @@ class ConditionMeasurementList(Resource):
         return post(self, condition_id)
 
 
-@api.route('/measurements/<int:id>')
+@api.route('/samples/<int:id>')
 @api.response(404, 'Not found')
 @api.param('id', 'The identifier')
-class Measurements(Resource):
-    @api.marshal_with(measurement_schema)
+class Samples(Resource):
+    @api.marshal_with(sample_schema)
     def get(self, id):
-        """Get a measurement by id"""
-        return get_measurement_by_id(id)
+        """Get a sample by id"""
+        return get_sample_by_id(id)
 
     @jwt_required
     def delete(self, id):
-        """Delete a measurement by id"""
-        measurement = get_measurement_by_id(id)
-        jwt_require_claim(measurement.condition.experiment.project_id, 'admin')
-        db.session.delete(measurement)
+        """Delete a sample by id"""
+        sample = get_sample_by_id(id)
+        jwt_require_claim(sample.condition.experiment.project_id, 'admin')
+        db.session.delete(sample)
         constraint_check(db)
 
-    @api.marshal_with(measurement_schema)
-    @api.expect(measurement_schema)
+    @api.marshal_with(sample_schema)
+    @api.expect(sample_schema)
     @jwt_required
     def put(self, id):
-        """Update a measurement by id"""
-        measurement = get_measurement_by_id(id)
-        jwt_require_claim(measurement.condition.experiment.project_id, 'write')
-        CRUD.modify_object(api.payload, measurement, check_permissions={
+        """Update a sample by id"""
+        sample = get_sample_by_id(id)
+        jwt_require_claim(sample.condition.experiment.project_id, 'write')
+        CRUD.modify_object(api.payload, sample, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,
             'condition_id': Condition,
         })
-        db.session.merge(measurement)
+        db.session.merge(sample)
         constraint_check(db)
-        return measurement
+        return sample

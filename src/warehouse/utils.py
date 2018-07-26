@@ -18,7 +18,7 @@ from sqlalchemy import exc
 from flask import g
 
 from warehouse.app import api, app, db
-from warehouse.models import BiologicalEntity, Experiment, Measurement, Medium, Condition
+from warehouse.models import BiologicalEntity, Experiment, Sample, Medium, Condition
 
 
 def filter_by_jwt_claims(model):
@@ -55,14 +55,14 @@ def get_condition_by_id(condition_id):
     return condition
 
 
-def get_measurement_by_id(measurement_id):
-    measurement = Measurement.query.get(measurement_id)
-    if measurement is None:
-        api.abort(404, "No such measurement")
-    query = filter_by_jwt_claims(Experiment).filter_by(id=measurement.condition.experiment.id)
+def get_sample_by_id(sample_id):
+    sample = Sample.query.get(sample_id)
+    if sample is None:
+        api.abort(404, "No such sample")
+    query = filter_by_jwt_claims(Experiment).filter_by(id=sample.condition.experiment.id)
     if not query.count():
-        api.abort(404, "No such measurement")
-    return measurement
+        api.abort(404, "No such sample")
+    return sample
 
 
 def add_from_file(file_object, model):

@@ -142,9 +142,9 @@ class Condition(TimestampMixin, db.Model):
     feed_medium = db.relationship(Medium, foreign_keys=[feed_medium_id])
 
 
-class Measurement(TimestampMixin, db.Model):
+class Sample(TimestampMixin, db.Model):
     condition_id = db.Column(db.Integer, db.ForeignKey('condition.id'), nullable=False)
-    condition = db.relationship(Condition, backref=db.backref('measurements', cascade="all, delete-orphan", lazy='dynamic'))
+    condition = db.relationship(Condition, backref=db.backref('samples', cascade="all, delete-orphan", lazy='dynamic'))
 
     id = db.Column(db.Integer, primary_key=True)
 
