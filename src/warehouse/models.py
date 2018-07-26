@@ -130,7 +130,7 @@ class Condition(TimestampMixin, db.Model):
     protocol = db.Column(db.String(256))
     temperature = db.Column(db.Float, nullable=False)
     aerobic = db.Column(db.Boolean, nullable=False)
-    key_value_store = db.Column(db.JSON, nullable=False)
+    key_value_store = db.Column(db.JSON, nullable=True)
 
     strain_id = db.Column(db.Integer, db.ForeignKey('strain.id'), nullable=False)
     strain = db.relationship(Strain)
