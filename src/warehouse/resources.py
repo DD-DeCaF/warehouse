@@ -80,6 +80,13 @@ condition_schema = api.model('Condition', {
     'protocol': fields.String,
     'temperature': fields.Float,
     'aerobic': fields.Boolean,
+    'key_value_store': fields.Raw(
+        title='User-defined Key-Value Store',
+        description='Field to allow users to add untyped metadata specific to '
+                    'each condition',
+        required=False, readonly=False,
+        example="{'Stirrer Speed' : '300RPM', 'PH' : '7.9'}"
+    ),
     'strain_id': fields.Integer,
     'medium_id': fields.Integer,
     'feed_medium_id': fields.Integer,
