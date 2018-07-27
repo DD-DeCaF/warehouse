@@ -17,8 +17,13 @@ depends_on = None
 
 
 def upgrade():
-    pass
+    op.rename_table('sample', 'condition')
+    op.rename_table('measurement', 'sample')
+    op.add_column('condition', sa.Column(
+        'key_value_store', sa.JSON(), nullable=True))
 
 
 def downgrade():
-    pass
+    op.drop_column('condition', 'key_value_store')
+    op.rename_table('sample', 'measurement')
+    op.rename_table('condition', 'sample')
