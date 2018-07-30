@@ -292,7 +292,7 @@ def test_condition(db, client, tokens_admin):
         zip(strain.items(), ['strain_id']*3)
     ):
         (permission, value), key = item
-        resp = client.put('/condition/{}'.format(new_condition['id']), data=json.dumps({key: value}), headers=headers)
+        resp = client.put('/conditions/{}'.format(new_condition['id']), data=json.dumps({key: value}), headers=headers)
         if permission == 'correct':
             assert resp.status_code == 200
         else:
