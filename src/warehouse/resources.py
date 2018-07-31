@@ -80,8 +80,8 @@ condition_schema = api.model('Condition', {
     'protocol': fields.String,
     'temperature': fields.Float,
     'aerobic': fields.Boolean,
-    'key_value_store': fields.Raw(
-        title='User-defined Key-Value Store',
+    'extra_data': fields.Raw(
+        title='User-defined Extra Data',
         description='Field to allow users to add untyped metadata specific to '
                     'each condition',
         required=False, readonly=False,

@@ -267,10 +267,20 @@ def test_compounds(client):
     assert set([i['type_id'] for i in results]) == {2}
 
 
+def test_condition_extra_data(db, client, tokens_admin):
+    for token in tokens_admin:
+        headers = get_headers(token['token'])
+        for x in range(1, 5, 1):
+            resp = client.get('/conditions/{}'.format(x), headers=headers)
+            condition = resp.get_json()
+            if "extra_data" in condition:
+                assert type(condition["extra_data"]==dict())
+
+
 def test_condition(db, client, tokens_admin):
     """Condition endpoints"""
     headers = get_headers(tokens_admin[0]['token'])
-    condition_info = {'name': 'new', 'protocol': 'protocol', 'temperature': 38, 'aerobic': True}
+    condition_info = {'name': 'new', 'protocol': 'protocol', 'temperature': 38, 'aerobic': True, 'extra_data': {'some_key': 'some_value'}}
     experiment = {'correct': 1, 'permissions': 3, 'not_existing': 666}
     medium = {'correct': 1, 'permissions': 2, 'not_existing': 666}
     strain = {'correct': 2, 'permissions': 3, 'not_existing': 666}
