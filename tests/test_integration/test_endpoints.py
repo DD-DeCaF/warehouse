@@ -274,7 +274,7 @@ def test_condition_extra_data(db, client, tokens_admin):
             resp = client.get('/conditions/{}'.format(x), headers=headers)
             condition = resp.get_json()
             if "extra_data" in condition:
-                assert type(condition["extra_data"]==dict())
+                assert type(condition["extra_data"])==dict
 
 
 def test_condition(db, client, tokens_admin):
