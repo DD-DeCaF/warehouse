@@ -120,17 +120,17 @@ class Experiment(TimestampMixin, db.Model):
 
 # TODO: tags
 # TODO: info to put to columns (protocol, temperature, gas etc)
-class Sample(TimestampMixin, db.Model):
+class Condition(TimestampMixin, db.Model):
     experiment_id = db.Column(db.Integer, db.ForeignKey('experiment.id'), nullable=False)
-    experiment = db.relationship(Experiment, backref=db.backref('samples', cascade="all, delete-orphan",
+    experiment = db.relationship(Experiment, backref=db.backref('conditions', cascade="all, delete-orphan",
                                                                 lazy='dynamic'))
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
 
     protocol = db.Column(db.String(256))
     temperature = db.Column(db.Float, nullable=False)
     aerobic = db.Column(db.Boolean, nullable=False)
+    extra_data = db.Column(db.JSON, nullable=True)
 
     strain_id = db.Column(db.Integer, db.ForeignKey('strain.id'), nullable=False)
     strain = db.relationship(Strain)
@@ -142,9 +142,9 @@ class Sample(TimestampMixin, db.Model):
     feed_medium = db.relationship(Medium, foreign_keys=[feed_medium_id])
 
 
-class Measurement(TimestampMixin, db.Model):
-    sample_id = db.Column(db.Integer, db.ForeignKey('sample.id'), nullable=False)
-    sample = db.relationship(Sample, backref=db.backref('measurements', cascade="all, delete-orphan", lazy='dynamic'))
+class Sample(TimestampMixin, db.Model):
+    condition_id = db.Column(db.Integer, db.ForeignKey('condition.id'), nullable=False)
+    condition = db.relationship(Condition, backref=db.backref('samples', cascade="all, delete-orphan", lazy='dynamic'))
 
     id = db.Column(db.Integer, primary_key=True)
 
