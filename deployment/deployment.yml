@@ -28,7 +28,7 @@ spec:
         - name: FLASK_APP
           value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
-          value: "https://app.dd-decaf.eu,http://localhost:4200"
+          value: "https://app.dd-decaf.eu,https://caffeine.dd-decaf.eu/,http://localhost:4200"
         - name: IAM_API
           value: "http://iam-production/iam"
         - name: POSTGRES_HOST
@@ -124,7 +124,7 @@ spec:
         - name: FLASK_APP
           value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
-          value: "http://staging.dd-decaf.eu,http://localhost:4200"
+          value: "http://staging.dd-decaf.eu,https://caffeine.dd-decaf.eu/,http://localhost:4200"
         - name: IAM_API
           value: "http://iam-staging/iam"
         - name: POSTGRES_HOST
