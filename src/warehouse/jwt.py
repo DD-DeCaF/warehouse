@@ -44,7 +44,7 @@ def init_app(app):
 
         try:
             _, token = auth.split(' ', 1)
-            g.jwt_claims = jwt.decode(token, app.config['JWT_PUBLIC_KEY'], 'RS512')
+            g.jwt_claims = jwt.decode(token, app.config['JWT_PUBLIC_KEY'], app.config['JWT_PUBLIC_KEY']['alg'])
             g.jwt_valid = True
             logger.debug(f"JWT claims accepted: {g.jwt_claims}")
         except (jwt.JWTError, jwt.ExpiredSignatureError, jwt.JWTClaimsError) as e:
