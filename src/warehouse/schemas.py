@@ -22,11 +22,11 @@ class StrictSchema(Schema):
 
 
 class Base(StrictSchema):
-    id = fields.Integer(required=True)
-    project_id = fields.Integer(required=True)
-    name = fields.String(required=True)
-    created = fields.DateTime(required=True)
-    updated = fields.DateTime(required=True)
+    id = fields.Integer(allow_none=True)
+    project_id = fields.Integer(allow_none=True)
+    name = fields.String(allow_none=True)
+    created = fields.DateTime(allow_none=True)
+    updated = fields.DateTime(allow_none=True)
 
 
 class Organism(Base):
@@ -46,69 +46,69 @@ class Unit(Base):
 
 
 class Experiment(Base):
-    description = fields.String(required=True)
+    description = fields.String(allow_none=True)
 
 
 class Strain(Base):
-    parent_id = fields.Integer(required=True)
-    genotype = fields.String(required=True)
-    organism_id = fields.Integer(required=True)
+    parent_id = fields.Integer(allow_none=True)
+    genotype = fields.String(allow_none=True)
+    organism_id = fields.Integer(allow_none=True)
 
 
 class BiologicalEntity(Base):
-    namespace_id = fields.Integer(required=True)
-    reference = fields.String(required=True)
-    type_id = fields.Integer(required=True)
+    namespace_id = fields.Integer(allow_none=True)
+    reference = fields.String(allow_none=True)
+    type_id = fields.Integer(allow_none=True)
 
 
 class MediumCompound(BiologicalEntity):
-    mass_concentration = fields.Float(required=True)
+    mass_concentration = fields.Float(allow_none=True)
 
 
 class MediumCompoundSimple(StrictSchema):
-    id = fields.Integer(required=True)
-    mass_concentration = fields.Float(required=True)
+    id = fields.Integer(allow_none=True)
+    mass_concentration = fields.Float(allow_none=True)
 
 
 class Medium(Base):
-    ph = fields.Float(required=True)
+    ph = fields.Float(allow_none=True)
     compounds = fields.List(fields.Nested(MediumCompound))
 
 
 class MediumSimple(Base):
-    ph = fields.Float(required=True)
+    ph = fields.Float(allow_none=True)
     compounds = fields.List(fields.Nested(MediumCompoundSimple))
 
 
 class Condition(StrictSchema):
-    created = fields.DateTime(required=True)
-    updated = fields.DateTime(required=True)
-    id = fields.Integer(required=True)
-    experiment_id = fields.Integer(required=True)
-    name = fields.String(required=True)
-    protocol = fields.String(required=True)
-    temperature = fields.Float(required=True)
-    aerobic = fields.Boolean(required=True)
+    created = fields.DateTime(allow_none=True)
+    updated = fields.DateTime(allow_none=True)
+    id = fields.Integer(allow_none=True)
+    experiment_id = fields.Integer(allow_none=True)
+    name = fields.String(allow_none=True)
+    protocol = fields.String(allow_none=True)
+    temperature = fields.Float(allow_none=True)
+    aerobic = fields.Boolean(allow_none=True)
     extra_data = fields.Raw(
         title='User-defined Extra Data',
         description='Field to allow users to add untyped metadata specific to '
                     'each condition',
-        required=False, readonly=False,
+        required=False,
         example="{'Stirrer Speed' : '300RPM', 'PH' : '7.9'}"
     ),
-    strain_id = fields.Integer(required=True)
-    medium_id = fields.Integer(required=True)
-    feed_medium_id = fields.Integer(required=True)
+    strain_id = fields.Integer(allow_none=True)
+    medium_id = fields.Integer(allow_none=True)
+    feed_medium_id = fields.Integer(allow_none=True)
 
 
 class Sample(StrictSchema):
-    created = fields.DateTime(required=True)
-    updated = fields.DateTime(required=True)
-    id = fields.Integer(required=True)
-    condition_id = fields.Integer(required=True)
-    datetime_start = fields.DateTime(required=True)
-    datetime_end = fields.DateTime(required=True)
-    numerator_id = fields.Integer(required=True)
-    denominator_id = fields.Integer(required=True)
-    value = fields.Float(required=True)
-    unit_id = fields.Integer(required=True)
+    created = fields.DateTime(allow_none=True)
+    updated = fields.DateTime(allow_none=True)
+    id = fields.Integer(allow_none=True)
+    condition_id = fields.Integer(allow_none=True)
+    datetime_start = fields.DateTime(allow_none=True)
+    datetime_end = fields.DateTime(allow_none=True)
+    numerator_id = fields.Integer(allow_none=True)
+    denominator_id = fields.Integer(allow_none=True)
+    value = fields.Float(allow_none=True)
+    unit_id = fields.Integer(allow_none=True)
