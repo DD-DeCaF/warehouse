@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 Flask = "*"
 Flask-Cors = "*"
-flask-restplus = "*"
+flask-apispec = "*"
 flask-basicauth = "*"
 flask-admin = "*"
 flask-sqlalchemy = "*"
