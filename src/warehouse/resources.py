@@ -15,7 +15,7 @@
 
 """Implement RESTful API endpoints using resources."""
 
-# from flask_restplus import Resource, fields, marshal_with_field
+from flask import abort
 from flask_apispec import FlaskApiSpec, MethodResource, doc, marshal_with, use_kwargs
 
 from warehouse import schemas
@@ -56,15 +56,6 @@ def init_app(app):
     register('/samples/<int:id>', Samples, "Samples")
 
 
-def post(obj, payload, *args, **kwargs):
-    if isinstance(payload, dict):
-        return obj.post_one(payload, *args, **kwargs)
-    elif isinstance(payload, list):
-        return [obj.post_one(data, *args, **kwargs) for data in payload]
-    else:
-        raise ValueError(f"Unsupported API payload type '{type(payload)}'")
-
-
 def crud_class_factory(model, schema, name, name_plural=None, check_permissions=None):
     if name_plural is None:
         name_plural = name + 's'
@@ -76,23 +67,19 @@ def crud_class_factory(model, schema, name, name_plural=None, check_permissions=
             # Note: claims are not checked, the query will be filtered by read access
             return CRUD.get(model)
 
-        @doc(f"Create a {name}")
-        def post_one(self, data):
-            # TODO: logically, jwt claim check should occur after check for project_id
-            if 'project_id' in data:
-                jwt_require_claim(data['project_id'], 'write')
-            return CRUD.post(data, model, check_permissions=check_permissions)
-
         @jwt_required
         @use_kwargs(schema)
         @marshal_with(schema, 200)
         @marshal_with(None, 403)
         @marshal_with(None, 404)
         @marshal_with(None, 409)
-        @doc(f"Create a {name} (accepts an object or an array of objects)")
-        def post(self):
-            # Note: claims will be checked later per instance posted
-            return post(self)
+        @doc(f"Create a {name}")
+        def post(self, **payload):
+            # TODO: logically, jwt claim check should occur after check for project_id
+            if 'project_id' in payload:
+                jwt_require_claim(payload['project_id'], 'write')
+            return CRUD.post(payload, model, check_permissions=check_permissions)
+
 
     class Item(MethodResource):
         @marshal_with(schema)
@@ -152,7 +139,7 @@ def query_compounds(query):
 
 
 class Chemicals(MethodResource):
-    @marshal_with(schemas.BiologicalEntity)
+    @marshal_with(schemas.BiologicalEntity(many=True))
     @doc(description="List all the compounds")
     def get(self):
         # Note: claims are not checked, the query will be filtered by read access
@@ -197,29 +184,24 @@ class MediaList(MethodResource):
             result.append(serialized)
         return result
 
-    @doc(description="Create one medium")
-    def post_one(self, data):
-        # TODO: logically, jwt claim check should occur after check for project_id
-        if 'project_id' in data:
-            jwt_require_claim(data['project_id'], 'write')
-        medium = Medium(
-            project_id=data['project_id'],
-            name=data['name'],
-            ph=data['ph'],
-        )
-        try:
-            set_compounds_from_payload(data, medium)
-        except NotCompound:
-            abort(404, "No such compound")
-        return medium_with_mass_concentrations(medium)
-
     @jwt_required
     @use_kwargs(schemas.MediumSimple)
     @marshal_with(schemas.Medium)
-    @doc(description="Create a medium by defining the recipe (accepts an object or an array of objects)")
-    def post(self):
-        # Note: claims will be checked later per instance posted
-        return post(self)
+    @doc(description="Create one medium by defining the recipe")
+    def post(self, **payload):
+        # TODO: logically, jwt claim check should occur after check for project_id
+        if 'project_id' in payload:
+            jwt_require_claim(payload['project_id'], 'write')
+        medium = Medium(
+            project_id=payload['project_id'],
+            name=payload['name'],
+            ph=payload['ph'],
+        )
+        try:
+            set_compounds_from_payload(payload, medium)
+        except NotCompound:
+            abort(404, "No such compound")
+        return medium_with_mass_concentrations(medium)
 
 
 class Media(MethodResource):
@@ -251,31 +233,26 @@ class Media(MethodResource):
 
 
 class ExperimentConditionList(MethodResource):
-    @marshal_with(schemas.Condition)
+    @marshal_with(schemas.Condition(many=True))
     @doc(description="List all the conditions for the given experiment")
     def get(self, experiment_id):
         return CRUD.get_by_id(Experiment, experiment_id).conditions.all()
 
+    @jwt_required
+    @use_kwargs(schemas.Condition)
+    @marshal_with(schemas.Condition)
     @doc(description="Create one condition")
-    def post_one(self, data, experiment_id):
+    def post(self, experiment_id, **payload):
         experiment = CRUD.get_by_id(Experiment, experiment_id)
         jwt_require_claim(experiment.project_id, 'write')
-        data['experiment_id'] = experiment_id
-        condition = CRUD.post(data, Condition, check_permissions={
+        payload['experiment_id'] = experiment_id
+        condition = CRUD.post(payload, Condition, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
             'feed_medium_id': Medium,
             'experiment_id': Experiment
         }, project_id=False)
         return condition
-
-    @jwt_required
-    @use_kwargs(schemas.Condition)
-    @marshal_with(schemas.Condition)
-    @doc(description="Create a condition (accepts an object or an array of objects)")
-    def post(self, experiment_id):
-        # Note: claims will be checked later per instance posted
-        return post(self, experiment_id)
 
 
 class Conditions(MethodResource):
@@ -295,11 +272,11 @@ class Conditions(MethodResource):
         constraint_check(db)
 
     @jwt_required
-    @use_kwargs(schemas.MediumSimple)
-    @marshal_with(schemas.Medium, 200)
+    @use_kwargs(schemas.Condition)
+    @marshal_with(schemas.Condition, 200)
     @marshal_with(None, 404)
     @doc(description="Update a condition by id")
-    def put(self, id):
+    def put(self, id, **payload):
         condition = get_condition_by_id(id)
         jwt_require_claim(condition.experiment.project_id, 'write')
         CRUD.modify_object(payload, condition, check_permissions={
@@ -314,32 +291,27 @@ class Conditions(MethodResource):
 
 
 class ConditionSampleList(MethodResource):
-    @marshal_with(schemas.Sample)
+    @marshal_with(schemas.Sample(many=True))
     @doc(description="List all the samples for the given condition")
     def get(self, condition_id):
         condition = get_condition_by_id(condition_id)
         return condition.samples.all()
 
-    @doc(description="Post one sample")
-    def post_one(self, data, condition_id):
+    @jwt_required
+    @use_kwargs(schemas.Sample)
+    @marshal_with(schemas.Sample)
+    @doc(description="Create a sample for the condition")
+    def post(self, condition_id, **payload):
         condition = get_condition_by_id(condition_id)
         jwt_require_claim(condition.experiment.project_id, 'write')
-        data['condition_id'] = condition_id
-        sample = CRUD.post(data, Sample, check_permissions={
+        payload['condition_id'] = condition_id
+        sample = CRUD.post(payload, Sample, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,
             'condition_id': Condition,
         }, project_id=False)
         return sample
-
-    @jwt_required
-    @use_kwargs(schemas.Sample)
-    @marshal_with(schemas.Sample)
-    @doc(description="Create samples for the condition (accepts an object or an array of objects)")
-    def post(self, condition_id):
-        # Note: claims will be checked later per instance posted
-        return post(self, condition_id)
 
 
 class Samples(MethodResource):
@@ -363,7 +335,7 @@ class Samples(MethodResource):
     @marshal_with(schemas.Sample, 200)
     @marshal_with(None, 404)
     @doc(description="Update a sample by id")
-    def put(self, id):
+    def put(self, id, **payload):
         sample = get_sample_by_id(id)
         jwt_require_claim(sample.condition.experiment.project_id, 'write')
         CRUD.modify_object(payload, sample, check_permissions={
