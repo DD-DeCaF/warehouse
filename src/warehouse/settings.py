@@ -78,7 +78,7 @@ class Default(object):
             },
         }
 
-        self.SQLALCHEMY_DATABASE_URI = 'postgres://{POSTGRES_ENV_USERNAME}:' \
+        self.SQLALCHEMY_DATABASE_URI = 'postgresql://{POSTGRES_ENV_USERNAME}:' \
                                        '{POSTGRES_ENV_PASS}@{POSTGRES_HOST}:{POSTGRES_PORT}/' \
                                        '{POSTGRES_DB_NAME}'.format(**os.environ)
         self.SQLALCHEMY_TRACK_MODIFICATIONS = False
