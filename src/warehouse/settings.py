@@ -50,6 +50,8 @@ class Default(object):
         self.DEBUG = True
         self.SECRET_KEY = os.urandom(24)
         self.CORS_ORIGINS = os.environ['ALLOWED_ORIGINS'].split(",")
+        self.APISPEC_TITLE = "Warehouse"
+        self.APISPEC_SWAGGER_UI_URL = "/"
         self.SENTRY_DSN = os.environ.get('SENTRY_DSN')
         self.LOGGING = {
             'version': 1,

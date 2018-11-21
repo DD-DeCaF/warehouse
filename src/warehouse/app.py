@@ -24,29 +24,24 @@ from flask_admin.contrib.sqla import ModelView
 from flask_basicauth import BasicAuth
 from flask_cors import CORS
 from flask_migrate import Migrate
-from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
 from raven.contrib.flask import Sentry
 from werkzeug.contrib.fixers import ProxyFix
+from werkzeug.exceptions import HTTPException
 
-from warehouse.settings import current_settings
 from warehouse import jwt
+from warehouse.settings import current_settings
 
 
 app = Flask(__name__)
 app.config.from_object(current_settings())
-api = Api(
-    title="warehouse",
-    version="0.1.0",
-    description="The storage for the experimental data used for modeling: omics, strains, media etc",
-)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 admin = Admin(app, name='warehouse')
 basic_auth = BasicAuth(app)
 
 
-def init_app(application, interface):
+def init_app(application):
     """Initialize the main app with config information and routes."""
     logging.config.dictConfig(application.config['LOGGING'])
     application.wsgi_app = ProxyFix(application.wsgi_app)
@@ -62,7 +57,7 @@ def init_app(application, interface):
 
     # Add routes and resources.
     from warehouse import resources, models, utils
-    interface.init_app(application)
+    resources.init_app(application)
 
     class ProtectedModelView(ModelView):
         page_size = 1000
@@ -102,3 +97,19 @@ def init_app(application, interface):
 
     # Add CORS information for all resources.
     CORS(application)
+
+    # Add an error handler for webargs parser error, ensuring a JSON response
+    # including all error messages produced from the parser.
+    @application.errorhandler(422)
+    def handle_webargs_error(error):
+        response = jsonify(error.data['messages'])
+        response.status_code = error.code
+        return response
+
+    # Handle werkzeug HTTPExceptions (typically raised through `flask.abort`) by
+    # returning a JSON response including the error description.
+    @application.errorhandler(HTTPException)
+    def handle_error(error):
+        response = jsonify({'message': error.description})
+        response.status_code = error.code
+        return response

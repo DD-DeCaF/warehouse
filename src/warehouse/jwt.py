@@ -15,8 +15,8 @@
 
 """Handling and verification of JWT claims"""
 
-from functools import wraps
 import logging
+from functools import wraps
 
 from flask import abort, g, jsonify, request
 from jose import jwt
