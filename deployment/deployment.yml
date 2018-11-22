@@ -69,9 +69,9 @@ spec:
               key: BASIC_AUTH_PASSWORD
         resources:
           requests:
-            cpu: "100m"
+            cpu: "10m"
           limits:
-            cpu: "500m"
+            cpu: "1000m"
         command: ["/bin/sh","-c"]
         args: ["flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
       - name: cloudsql-proxy
@@ -85,7 +85,7 @@ spec:
           requests:
             cpu: "10m"
           limits:
-            cpu: "100m"
+            cpu: "1000m"
       volumes:
       - name: cloudsql-instance-credentials
         secret:
@@ -109,7 +109,6 @@ spec:
         app: warehouse
         env: staging
     spec:
-      containers:
       containers:
       - name: web
         image: gcr.io/dd-decaf-cfbf6/warehouse:devel
@@ -165,9 +164,9 @@ spec:
               key: BASIC_AUTH_PASSWORD
         resources:
           requests:
-            cpu: "100m"
+            cpu: "1000m"
           limits:
-            cpu: "500m"
+            cpu: "2000m"
         command: ["/bin/sh","-c"]
         args: ["flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
       - name: cloudsql-proxy
@@ -179,9 +178,9 @@ spec:
             readOnly: true
         resources:
           requests:
-            cpu: "10m"
-          limits:
             cpu: "100m"
+          limits:
+            cpu: "2000m"
       volumes:
       - name: cloudsql-instance-credentials
         secret:
