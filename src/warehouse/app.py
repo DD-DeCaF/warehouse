@@ -18,7 +18,7 @@
 import logging
 import logging.config
 
-from flask import Flask, g, jsonify, request
+from flask import Flask, request
 from flask_admin import Admin, form
 from flask_admin.contrib.sqla import ModelView
 from flask_basicauth import BasicAuth
@@ -27,9 +27,8 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from raven.contrib.flask import Sentry
 from werkzeug.contrib.fixers import ProxyFix
-from werkzeug.exceptions import HTTPException
 
-from warehouse import jwt
+from warehouse import errorhandlers, jwt
 from warehouse.settings import current_settings
 
 
@@ -54,6 +53,9 @@ def init_app(application):
 
     # Add JWT middleware
     jwt.init_app(application)
+
+    # Add custom error handlers
+    errorhandlers.init_app(application)
 
     # Add routes and resources.
     from warehouse import resources, models, utils
@@ -97,19 +99,3 @@ def init_app(application):
 
     # Add CORS information for all resources.
     CORS(application)
-
-    # Add an error handler for webargs parser error, ensuring a JSON response
-    # including all error messages produced from the parser.
-    @application.errorhandler(422)
-    def handle_webargs_error(error):
-        response = jsonify(error.data['messages'])
-        response.status_code = error.code
-        return response
-
-    # Handle werkzeug HTTPExceptions (typically raised through `flask.abort`) by
-    # returning a JSON response including the error description.
-    @application.errorhandler(HTTPException)
-    def handle_error(error):
-        response = jsonify({'message': error.description})
-        response.status_code = error.code
-        return response
