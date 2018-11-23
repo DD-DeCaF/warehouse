@@ -14,11 +14,12 @@
 # limitations under the License.
 
 import json
-from sqlalchemy import exc
-from flask import g
 
-from warehouse.app import api, app, db
-from warehouse.models import BiologicalEntity, Experiment, Sample, Medium, Condition
+from flask import abort, g
+from sqlalchemy import exc
+
+from warehouse.app import app, db
+from warehouse.models import BiologicalEntity, Condition, Experiment, Medium, Sample
 
 
 def filter_by_jwt_claims(model):
@@ -33,7 +34,7 @@ def filter_by_projects(model, projects):
 def get_object(model, object_id):
     obj = filter_by_jwt_claims(model).filter_by(id=object_id).first()
     if obj is None:
-        api.abort(404, "{} {} doesn't exist".format(model.__name__, object_id))
+        abort(404, "{} {} doesn't exist".format(model.__name__, object_id))
     return obj
 
 
@@ -42,26 +43,26 @@ def constraint_check(db):
         db.session.commit()
     except exc.IntegrityError:
         db.session.rollback()
-        api.abort(409, "Wrong data")
+        abort(409, "Wrong data")
 
 
 def get_condition_by_id(condition_id):
     condition = Condition.query.get(condition_id)
     if condition is None:
-        api.abort(404, "No such condition")
+        abort(404, "No such condition")
     query = filter_by_jwt_claims(Experiment).filter_by(id=condition.experiment.id)
     if not query.count():
-        api.abort(404, "No such condition")
+        abort(404, "No such condition")
     return condition
 
 
 def get_sample_by_id(sample_id):
     sample = Sample.query.get(sample_id)
     if sample is None:
-        api.abort(404, "No such sample")
+        abort(404, "No such sample")
     query = filter_by_jwt_claims(Experiment).filter_by(id=sample.condition.experiment.id)
     if not query.count():
-        api.abort(404, "No such sample")
+        abort(404, "No such sample")
     return sample
 
 
@@ -115,7 +116,7 @@ class CRUD(object):
     def post(cls, data, model, check_permissions=None, project_id=True):
         if project_id:
             if data.get('project_id', None) is None:
-                api.abort(403, 'Project ID is not set')
+                abort(403, 'Project ID is not set')
             else:
                 obj = model(project_id=data['project_id'])
         else:

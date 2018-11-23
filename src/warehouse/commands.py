@@ -15,7 +15,7 @@
 from flask_script import Manager
 
 from warehouse.models import (
-    BiologicalEntity, BiologicalEntityType, Experiment, Sample, Medium, Namespace, Organism, Condition, Strain, Unit)
+    BiologicalEntity, BiologicalEntityType, Condition, Experiment, Medium, Namespace, Organism, Sample, Strain, Unit)
 from warehouse.utils import add_from_file
 
 

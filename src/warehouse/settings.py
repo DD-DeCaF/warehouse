@@ -50,6 +50,8 @@ class Default(object):
         self.DEBUG = True
         self.SECRET_KEY = os.urandom(24)
         self.CORS_ORIGINS = os.environ['ALLOWED_ORIGINS'].split(",")
+        self.APISPEC_TITLE = "Warehouse"
+        self.APISPEC_SWAGGER_UI_URL = "/"
         self.SENTRY_DSN = os.environ.get('SENTRY_DSN')
         self.LOGGING = {
             'version': 1,
@@ -78,7 +80,7 @@ class Default(object):
             },
         }
 
-        self.SQLALCHEMY_DATABASE_URI = 'postgres://{POSTGRES_ENV_USERNAME}:' \
+        self.SQLALCHEMY_DATABASE_URI = 'postgresql://{POSTGRES_ENV_USERNAME}:' \
                                        '{POSTGRES_ENV_PASS}@{POSTGRES_HOST}:{POSTGRES_PORT}/' \
                                        '{POSTGRES_DB_NAME}'.format(**os.environ)
         self.SQLALCHEMY_TRACK_MODIFICATIONS = False

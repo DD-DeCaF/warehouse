@@ -13,40 +13,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Expose the main Flask-RESTPlus application."""
+"""Expose the main Flask application."""
 
 import logging
 import logging.config
 
-from flask import Flask, g, jsonify, request
+from flask import Flask, request
 from flask_admin import Admin, form
 from flask_admin.contrib.sqla import ModelView
 from flask_basicauth import BasicAuth
 from flask_cors import CORS
 from flask_migrate import Migrate
-from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
 from raven.contrib.flask import Sentry
 from werkzeug.contrib.fixers import ProxyFix
 
+from warehouse import errorhandlers, jwt
 from warehouse.settings import current_settings
-from warehouse import jwt
 
 
 app = Flask(__name__)
 app.config.from_object(current_settings())
-api = Api(
-    title="warehouse",
-    version="0.1.0",
-    description="The storage for the experimental data used for modeling: omics, strains, media etc",
-)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 admin = Admin(app, name='warehouse')
 basic_auth = BasicAuth(app)
 
 
-def init_app(application, interface):
+def init_app(application):
     """Initialize the main app with config information and routes."""
     logging.config.dictConfig(application.config['LOGGING'])
     application.wsgi_app = ProxyFix(application.wsgi_app)
@@ -60,9 +54,12 @@ def init_app(application, interface):
     # Add JWT middleware
     jwt.init_app(application)
 
+    # Add custom error handlers
+    errorhandlers.init_app(application)
+
     # Add routes and resources.
     from warehouse import resources, models, utils
-    interface.init_app(application)
+    resources.init_app(application)
 
     class ProtectedModelView(ModelView):
         page_size = 1000

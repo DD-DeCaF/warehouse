@@ -1,0 +1,14 @@
+Flask
+Flask-Cors
+flask-apispec
+flask-basicauth
+flask-admin
+flask-sqlalchemy
+Flask-Migrate
+Flask-Fixtures
+Flask-Script
+psycopg2
+gunicorn
+requests
+raven[flask]
+python-jose

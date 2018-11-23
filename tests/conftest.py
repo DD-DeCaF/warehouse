@@ -18,7 +18,6 @@
 import pytest
 from jose import jwt
 
-from warehouse.app import api
 from warehouse.app import app as app_
 from warehouse.app import init_app
 from warehouse.commands import populate
@@ -28,7 +27,7 @@ from warehouse.models import db as db_
 @pytest.fixture(scope="session")
 def app():
     """Provide an initialized Flask for use in certain test cases."""
-    init_app(app_, api)
+    init_app(app_)
     with app_.app_context():
         yield app_
 

@@ -336,11 +336,11 @@ def test_samples(db, client, tokens_admin):
     condition = {'correct': 3, 'permissions': 4, 'not_existing': 666}
     for key, value in condition.items():
         resp = client.post('/conditions/{}/samples'.format(value),
-                           data=json.dumps([sample_info]),
+                           data=json.dumps(sample_info),
                            headers=headers)
         if key == 'correct':
             assert resp.status_code == 200
-            obj = resp.get_json()[0]
+            obj = resp.get_json()
         else:
             assert resp.status_code == 404
     numerator = {'correct': 1, 'permissions': 5, 'not_existing': 666}
