@@ -69,7 +69,7 @@ spec:
               key: BASIC_AUTH_PASSWORD
         resources:
           requests:
-            cpu: "1000m"
+            cpu: "10m"
           limits:
             cpu: "2000m"
         command: ["/bin/sh","-c"]
@@ -83,7 +83,7 @@ spec:
             readOnly: true
         resources:
           requests:
-            cpu: "100m"
+            cpu: "10m"
           limits:
             cpu: "2000m"
       volumes:
