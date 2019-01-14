@@ -22,9 +22,6 @@ install:
   - make databases
 
 script:
-  - make start
-  - make upgrade
-  - make fixture
   - make test-travis
 
 before_deploy:
