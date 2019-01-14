@@ -19,7 +19,7 @@ env:
 
 install:
   - docker build -t ${IMAGE_REPO}:${TRAVIS_COMMIT::12} -t ${IMAGE_REPO}:${TRAVIS_BRANCH} .
-  - make setup
+  - make databases
 
 script:
   - make start
