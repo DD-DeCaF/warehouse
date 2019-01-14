@@ -14,10 +14,6 @@ network:
 	docker network inspect DD-DeCaF >/dev/null 2>&1 || \
 		docker network create DD-DeCaF
 
-## Create docker database volume
-volume:
-	docker volume create --name=warehouse
-
 ## Build local docker images.
 build: network volume
 	docker-compose build
