@@ -32,7 +32,7 @@ services:
       - IAM_API=https://api-staging.dd-decaf.eu/iam
     command: ["/bin/sh","-c","FLASK_APP=src/warehouse/wsgi.py flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
   postgres:
-    image: postgres
+    image: postgres:9.6-alpine
     ports:
       - "${PG_PORT:-5432}:5432"
     volumes:
