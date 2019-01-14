@@ -30,7 +30,7 @@ style: flake8 isort license
 
 ## Run the tests.
 test:
-	-docker-compose run --rm -e ENVIRONMENT=testing -e POSTGRES_DB_NAME=testing web \
+	-docker-compose run --rm -e ENVIRONMENT=testing web \
 		pytest --cov=src/warehouse tests
 
 ## Run the tests and report coverage (see https://docs.codecov.io/docs/testing-with-docker).
