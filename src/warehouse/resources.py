@@ -52,6 +52,7 @@ def init_app(app):
     register('/media/<int:id>', Media, "Media")
     register('/experiments/<int:experiment_id>/conditions', ExperimentConditionList, "ExperimentConditionList")
     register('/conditions/<int:id>', Conditions, "Conditions")
+    register('/conditions/<int:condition_id>/data', ConditionDataList, "ConditionDataList")
     register('/conditions/<int:condition_id>/samples', ConditionSampleList, "ConditionSampleList")
     register('/samples/<int:id>', Samples, "Samples")
 
@@ -288,6 +289,48 @@ class Conditions(MethodResource):
         db.session.merge(condition)
         constraint_check(db)
         return condition
+
+
+class ConditionDataList(MethodResource):
+    @marshal_with(schemas.ModelingData())
+    @doc(description="List modeling data for the given condition")
+    def get(self, condition_id):
+        condition = get_condition_by_id(condition_id)
+
+        medium = [{
+            'id': compound.reference,
+            'namespace': compound.namespace.name,
+        } for compound in condition.medium.compounds]
+
+        def iterate(genotype, strain):
+            genotype.append(strain.genotype)
+            if strain.parent:
+                iterate(genotype, strain.parent[0])
+            return genotype
+        genotype = iterate([], condition.strain)
+
+        measurements = []
+        for sample in condition.samples.all():
+            if sample.denominator is None and sample.numerator.type.name == 'reaction':
+                # The BIGG namespace is denoted by BIGG in the warehouse, map it
+                # to the correct miriam ns identifier
+                namespace = sample.numerator.namespace.name
+                if namespace == 'BIGG':
+                    namespace = 'bigg.reaction'
+                measurements.append({
+                    'id': sample.numerator.reference,
+                    'namespace': namespace,
+                    'measurements': [sample.value],
+                })
+            # TODO (Ali Kaafarani): include growth measurements
+            # TODO (Ali Kaafarani): include compound measurements
+            # TODO (Ali Kaafarani): include proteomics
+
+        return {
+            'medium': medium,
+            'genotype': genotype,
+            'measurements': measurements,
+        }
 
 
 class ConditionSampleList(MethodResource):

@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from marshmallow import Schema, fields
+from marshmallow.validate import OneOf
 
 
 class StrictSchema(Schema):
@@ -112,3 +113,30 @@ class Sample(StrictSchema):
     denominator_id = fields.Integer(allow_none=True)
     value = fields.Float(allow_none=True)
     unit_id = fields.Integer(allow_none=True)
+
+
+class MediumCompound(Schema):
+    id = fields.String(required=True)
+    # Note: namespace should match a namespace identifier from miriam.
+    # See https://www.ebi.ac.uk/miriam/main/collections
+    namespace = fields.String(required=True)
+
+
+class Measurement(Schema):
+    id = fields.String(required=True)
+    # Note: namespace should match a namespace identifier from miriam.
+    # See https://www.ebi.ac.uk/miriam/main/collections
+    namespace = fields.String(required=True)
+    measurements = fields.List(fields.Float())
+    type = fields.String(required=True, validate=OneOf([
+        'compound',
+        'reaction',
+        'growth-rate',
+        'protein',
+    ]))
+
+
+class ModelingData(Schema):
+    medium = fields.Nested(MediumCompound, many=True, missing=None)
+    genotype = fields.List(fields.String(), missing=None)
+    measurements = fields.Nested(Measurement, many=True, missing=None)
