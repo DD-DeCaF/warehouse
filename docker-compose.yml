@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: dddecaf/warehouse:${IMAGE_TAG:-latest}
+    image: gcr.io/dd-decaf-cfbf6/warehouse:${IMAGE_TAG:-latest}
     depends_on:
       - postgres
     networks:
