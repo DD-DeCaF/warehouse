@@ -321,6 +321,7 @@ class ConditionDataList(MethodResource):
                     'id': sample.numerator.reference,
                     'namespace': namespace,
                     'measurements': [sample.value],
+                    'type': sample.numerator.type.name,
                 })
             # TODO (Ali Kaafarani): include growth measurements
             # TODO (Ali Kaafarani): include compound measurements
