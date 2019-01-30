@@ -311,7 +311,14 @@ class ConditionDataList(MethodResource):
 
         measurements = []
         for sample in condition.samples.all():
-            if sample.denominator is None and sample.numerator.type.name == 'reaction':
+            if sample.numerator is None and sample.denominator is None and sample.unit.name == "growth (1/h)":
+                measurements.append({
+                    'id': None,
+                    'namespace': None,
+                    'measurements': [sample.value],
+                    'type': "growth-rate",
+                })
+            elif sample.denominator is None and sample.numerator.type.name == 'reaction':
                 # The BIGG namespace is denoted by BIGG in the warehouse, map it
                 # to the correct miriam ns identifier
                 namespace = sample.numerator.namespace.name
@@ -323,7 +330,6 @@ class ConditionDataList(MethodResource):
                     'measurements': [sample.value],
                     'type': sample.numerator.type.name,
                 })
-            # TODO (Ali Kaafarani): include growth measurements
             # TODO (Ali Kaafarani): include compound measurements
             # TODO (Ali Kaafarani): include proteomics
 
