@@ -297,9 +297,18 @@ class ConditionDataList(MethodResource):
     def get(self, condition_id):
         condition = get_condition_by_id(condition_id)
 
+        def bigg_namespace(namespace, type):
+            """Correct the BIGG namespace to the actual miriam identifier."""
+            if namespace == "BIGG":
+                if type == "metabolite":
+                    return "bigg.metabolite"
+                elif type == "reaction":
+                    return "bigg.reaction"
+            return namespace
+
         medium = [{
             'id': compound.reference,
-            'namespace': compound.namespace.name,
+            'namespace': bigg_namespace(compound.namespace.name, "metabolite"),
         } for compound in condition.medium.compounds]
 
         def iterate(genotype, strain):
@@ -319,14 +328,9 @@ class ConditionDataList(MethodResource):
                     'type': "growth-rate",
                 })
             elif sample.denominator is None and sample.numerator.type.name == 'reaction':
-                # The BIGG namespace is denoted by BIGG in the warehouse, map it
-                # to the correct miriam ns identifier
-                namespace = sample.numerator.namespace.name
-                if namespace == 'BIGG':
-                    namespace = 'bigg.reaction'
                 measurements.append({
                     'id': sample.numerator.reference,
-                    'namespace': namespace,
+                    'namespace': bigg_namespace(sample.numerator.namespace.name, "reaction"),
                     'measurements': [sample.value],
                     'type': sample.numerator.type.name,
                 })
