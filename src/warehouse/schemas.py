@@ -131,12 +131,16 @@ class Measurement(Schema):
     type = fields.String(required=True, validate=OneOf([
         'compound',
         'reaction',
-        'growth-rate',
         'protein',
     ]))
+
+
+class GrowthRate(Schema):
+    measurements = fields.List(fields.Float())
 
 
 class ModelingData(Schema):
     medium = fields.Nested(MediumCompound, many=True, missing=None)
     genotype = fields.List(fields.String(), missing=None)
+    growth_rate = fields.Nested(Measurement, missing=None)
     measurements = fields.Nested(Measurement, many=True, missing=None)

@@ -318,15 +318,14 @@ class ConditionDataList(MethodResource):
             return genotype
         genotype = iterate([], condition.strain)
 
+        growth_rate = None
         measurements = []
         for sample in condition.samples.all():
             if sample.numerator is None and sample.denominator is None and sample.unit.name == "growth (1/h)":
-                measurements.append({
-                    'id': None,
-                    'namespace': None,
+                growth_rate = {
                     'measurements': [sample.value],
                     'type': "growth-rate",
-                })
+                }
             elif sample.denominator is None and sample.numerator.type.name == 'reaction':
                 measurements.append({
                     'id': sample.numerator.reference,
@@ -340,6 +339,7 @@ class ConditionDataList(MethodResource):
         return {
             'medium': medium,
             'genotype': genotype,
+            'growth_rate': growth_rate,
             'measurements': measurements,
         }
 
