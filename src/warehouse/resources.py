@@ -321,12 +321,12 @@ class ConditionDataList(MethodResource):
         growth_rate = None
         measurements = []
         for sample in condition.samples.all():
-            if sample.numerator is None and sample.denominator is None and sample.unit.name == "growth (1/h)":
+            if sample.is_growth_rate():
                 growth_rate = {
                     'measurements': [sample.value],
                     'type': "growth-rate",
                 }
-            elif sample.denominator is None and sample.numerator.type.name == 'reaction':
+            elif sample.is_fluxomics():
                 measurements.append({
                     'id': sample.numerator.reference,
                     'namespace': bigg_namespace(sample.numerator.namespace.name, "reaction"),
