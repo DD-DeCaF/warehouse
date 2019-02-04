@@ -172,6 +172,6 @@ class Sample(TimestampMixin, db.Model):
     def is_fluxomics(self):
         return (
             self.numerator is not None
-            and self.numerator.type == "reaction"
+            and self.numerator.type.name == "reaction"
             and self.denominator is None
         )
