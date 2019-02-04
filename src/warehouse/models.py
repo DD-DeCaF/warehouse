@@ -161,3 +161,17 @@ class Sample(TimestampMixin, db.Model):
 
     unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'), nullable=False)
     unit = db.relationship(Unit)
+
+    def is_growth_rate(self):
+        return (
+            self.numerator is None
+            and self.denominator is None
+            and self.unit.name == "growth (1/h)"
+        )
+
+    def is_fluxomics(self):
+        return (
+            self.numerator is not None
+            and self.numerator.type == "reaction"
+            and self.denominator is None
+        )

@@ -297,9 +297,18 @@ class ConditionDataList(MethodResource):
     def get(self, condition_id):
         condition = get_condition_by_id(condition_id)
 
+        def bigg_namespace(namespace, type):
+            """Correct the BIGG namespace to the actual miriam identifier."""
+            if namespace == "BIGG":
+                if type == "metabolite":
+                    return "bigg.metabolite"
+                elif type == "reaction":
+                    return "bigg.reaction"
+            return namespace
+
         medium = [{
             'id': compound.reference,
-            'namespace': compound.namespace.name,
+            'namespace': bigg_namespace(compound.namespace.name, "metabolite"),
         } for compound in condition.medium.compounds]
 
         def iterate(genotype, strain):
@@ -309,27 +318,28 @@ class ConditionDataList(MethodResource):
             return genotype
         genotype = iterate([], condition.strain)
 
+        growth_rate = None
         measurements = []
         for sample in condition.samples.all():
-            if sample.denominator is None and sample.numerator.type.name == 'reaction':
-                # The BIGG namespace is denoted by BIGG in the warehouse, map it
-                # to the correct miriam ns identifier
-                namespace = sample.numerator.namespace.name
-                if namespace == 'BIGG':
-                    namespace = 'bigg.reaction'
+            if sample.is_growth_rate():
+                growth_rate = {
+                    'measurements': [sample.value],
+                    'type': "growth-rate",
+                }
+            elif sample.is_fluxomics():
                 measurements.append({
                     'id': sample.numerator.reference,
-                    'namespace': namespace,
+                    'namespace': bigg_namespace(sample.numerator.namespace.name, "reaction"),
                     'measurements': [sample.value],
                     'type': sample.numerator.type.name,
                 })
-            # TODO (Ali Kaafarani): include growth measurements
             # TODO (Ali Kaafarani): include compound measurements
             # TODO (Ali Kaafarani): include proteomics
 
         return {
             'medium': medium,
             'genotype': genotype,
+            'growth_rate': growth_rate,
             'measurements': measurements,
         }
 
