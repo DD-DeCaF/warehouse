@@ -312,7 +312,9 @@ class ConditionDataList(MethodResource):
         } for compound in condition.medium.compounds]
 
         def iterate(genotype, strain):
-            genotype.append(strain.genotype)
+            # Wild type strains have empty strings in the genotype
+            if strain.genotype:
+                genotype.append(strain.genotype)
             if strain.parent:
                 iterate(genotype, strain.parent[0])
             return genotype
