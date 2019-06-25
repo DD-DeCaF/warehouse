@@ -142,5 +142,5 @@ class GrowthRate(Schema):
 class ModelingData(Schema):
     medium = fields.Nested(MediumCompound, many=True, missing=None)
     genotype = fields.List(fields.String(), missing=None)
-    growth_rate = fields.Nested(Measurement, missing=None)
+    growth_rate = fields.Nested(GrowthRate, missing=None)
     measurements = fields.Nested(Measurement, many=True, missing=None)

@@ -326,7 +326,6 @@ class ConditionDataList(MethodResource):
             if sample.is_growth_rate():
                 growth_rate = {
                     'measurements': [sample.value],
-                    'type': "growth-rate",
                 }
             elif sample.is_fluxomics():
                 measurements.append({
