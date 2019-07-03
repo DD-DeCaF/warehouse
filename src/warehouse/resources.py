@@ -334,7 +334,13 @@ class ConditionDataList(MethodResource):
                     'measurements': [sample.value],
                     'type': sample.numerator.type.name,
                 })
-            # TODO (Ali Kaafarani): include compound measurements
+            elif sample.is_metabolomics():
+                measurements.append({
+                    "id": sample.numerator.reference,
+                    "namespace": bigg_namespace(sample.numerator.namespace.name, "metabolite"),
+                    "measurements": [sample.value],
+                    "type": sample.numerator.type.name,
+                })
             # TODO (Ali Kaafarani): include proteomics
 
         return {

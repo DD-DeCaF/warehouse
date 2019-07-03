@@ -175,3 +175,11 @@ class Sample(TimestampMixin, db.Model):
             and self.numerator.type.name == "reaction"
             and self.denominator is None
         )
+
+    def is_metabolomics(self):
+        return (
+            self.numerator is not None
+            and self.numerator.type.name == "compound"
+            and self.denominator is None
+            and self.unit.name == "compound / CDW (mmol/g/h)"
+        )
