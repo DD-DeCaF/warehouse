@@ -14,6 +14,58 @@ spec:
         app: warehouse
         env: production
     spec:
+      initContainers:
+      - name: migrate
+        image: gcr.io/dd-decaf-cfbf6/warehouse:master
+        imagePullPolicy: Always
+        env:
+        - name: ENVIRONMENT
+          value: production
+        - name: SCRIPT_NAME
+          value: /warehouse
+        - name: FLASK_APP
+          value: "src/warehouse/wsgi.py"
+        - name: ALLOWED_ORIGINS
+          value: "https://caffeine.dd-decaf.eu,https://staging.dd-decaf.eu,http://localhost:4200"
+        - name: IAM_API
+          value: "http://iam-production/iam"
+        - name: POSTGRES_HOST
+          value: cloudsql-proxy
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_DB_NAME
+          value: warehouse_production
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: SECRET_KEY
+        - name: POSTGRES_ENV_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: POSTGRES_ENV_USERNAME
+        - name: POSTGRES_ENV_PASS
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: POSTGRES_ENV_PASS
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: SENTRY_DSN
+        - name: BASIC_AUTH_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: BASIC_AUTH_USERNAME
+        - name: BASIC_AUTH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-production
+              key: BASIC_AUTH_PASSWORD
+        command: ["flask", "db", "upgrade"]
       containers:
       - name: web
         image: gcr.io/dd-decaf-cfbf6/warehouse:master
@@ -28,15 +80,15 @@ spec:
         - name: FLASK_APP
           value: "src/warehouse/wsgi.py"
         - name: ALLOWED_ORIGINS
-          value: "https://app.dd-decaf.eu,http://localhost:4200"
+          value: "https://caffeine.dd-decaf.eu,https://staging.dd-decaf.eu,http://localhost:4200"
         - name: IAM_API
           value: "http://iam-production/iam"
         - name: POSTGRES_HOST
-          value: localhost
+          value: cloudsql-proxy
         - name: POSTGRES_PORT
           value: "5432"
         - name: POSTGRES_DB_NAME
-          value: warehouse
+          value: warehouse_production
         - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
@@ -69,120 +121,7 @@ spec:
               key: BASIC_AUTH_PASSWORD
         resources:
           requests:
-            cpu: "100m"
-          limits:
-            cpu: "500m"
-        command: ["/bin/sh","-c"]
-        args: ["flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
-      - name: cloudsql-proxy
-        image: gcr.io/cloudsql-docker/gce-proxy:1.11
-        command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]
-        volumeMounts:
-          - name: cloudsql-instance-credentials
-            mountPath: /secrets/cloudsql
-            readOnly: true
-        resources:
-          requests:
             cpu: "10m"
           limits:
-            cpu: "100m"
-      volumes:
-      - name: cloudsql-instance-credentials
-        secret:
-          secretName: cloudsql-instance-credentials
-
----
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: warehouse-staging
-spec:
-  selector:
-    matchLabels:
-      app: warehouse
-      env: staging
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: warehouse
-        env: staging
-    spec:
-      containers:
-      containers:
-      - name: web
-        image: gcr.io/dd-decaf-cfbf6/warehouse:devel
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8000
-        env:
-        - name: ENVIRONMENT
-          value: staging
-        - name: SCRIPT_NAME
-          value: /warehouse
-        - name: FLASK_APP
-          value: "src/warehouse/wsgi.py"
-        - name: ALLOWED_ORIGINS
-          value: "http://staging.dd-decaf.eu,http://localhost:4200"
-        - name: IAM_API
-          value: "http://iam-staging/iam"
-        - name: POSTGRES_HOST
-          value: localhost
-        - name: POSTGRES_PORT
-          value: "5432"
-        - name: POSTGRES_DB_NAME
-          value: warehouse-staging
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: warehouse-staging
-              key: SECRET_KEY
-        - name: POSTGRES_ENV_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: warehouse-staging
-              key: POSTGRES_ENV_USERNAME
-        - name: POSTGRES_ENV_PASS
-          valueFrom:
-            secretKeyRef:
-              name: warehouse-staging
-              key: POSTGRES_ENV_PASS
-        - name: SENTRY_DSN
-          valueFrom:
-            secretKeyRef:
-              name: warehouse-staging
-              key: SENTRY_DSN
-        - name: BASIC_AUTH_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: warehouse-staging
-              key: BASIC_AUTH_USERNAME
-        - name: BASIC_AUTH_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: warehouse-staging
-              key: BASIC_AUTH_PASSWORD
-        resources:
-          requests:
-            cpu: "100m"
-          limits:
-            cpu: "500m"
-        command: ["/bin/sh","-c"]
-        args: ["flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
-      - name: cloudsql-proxy
-        image: gcr.io/cloudsql-docker/gce-proxy:1.11
-        command: ["/cloud_sql_proxy", "-instances=dd-decaf-cfbf6:europe-west1:dd-decaf=tcp:5432", "-credential_file=/secrets/cloudsql/credentials.json"]
-        volumeMounts:
-          - name: cloudsql-instance-credentials
-            mountPath: /secrets/cloudsql
-            readOnly: true
-        resources:
-          requests:
-            cpu: "10m"
-          limits:
-            cpu: "100m"
-      volumes:
-      - name: cloudsql-instance-credentials
-        secret:
-          secretName: cloudsql-instance-credentials
+            cpu: "2000m"
+        command: ["gunicorn", "-c", "gunicorn.py", "warehouse.wsgi:app"]

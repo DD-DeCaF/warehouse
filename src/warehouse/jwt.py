@@ -15,8 +15,8 @@
 
 """Handling and verification of JWT claims"""
 
-from functools import wraps
 import logging
+from functools import wraps
 
 from flask import abort, g, jsonify, request
 from jose import jwt
@@ -36,16 +36,18 @@ def init_app(app):
             g.jwt_claims = {'prj': {}}
             return
 
-        try:
-            auth = request.headers['Authorization']
-            if not auth.startswith('Bearer '):
-                raise ValueError("Expected Bearer token authentication")
+        auth = request.headers['Authorization']
+        if not auth.startswith('Bearer '):
+            g.jwt_valid = False
+            g.jwt_claims = {'prj': {}}
+            return
 
+        try:
             _, token = auth.split(' ', 1)
-            g.jwt_claims = jwt.decode(token, app.config['JWT_PUBLIC_KEY'], 'RS512')
+            g.jwt_claims = jwt.decode(token, app.config['JWT_PUBLIC_KEY'], app.config['JWT_PUBLIC_KEY']['alg'])
             g.jwt_valid = True
             logger.debug(f"JWT claims accepted: {g.jwt_claims}")
-        except (ValueError, jwt.JWTError, jwt.ExpiredSignatureError, jwt.JWTClaimsError) as e:
+        except (jwt.JWTError, jwt.ExpiredSignatureError, jwt.JWTClaimsError) as e:
             abort(401, f"JWT authentication failed: {e}")
 
 

@@ -14,190 +14,120 @@
 # limitations under the License.
 
 """Implement RESTful API endpoints using resources."""
-from flask_restplus import Resource, fields, marshal_with_field
 
-from warehouse.app import api, db
-from warehouse.jwt import jwt_required, jwt_require_claim
+from flask import abort
+from flask_apispec import FlaskApiSpec, MethodResource, doc, marshal_with, use_kwargs
+
+from warehouse import schemas
+from warehouse.app import db
+from warehouse.jwt import jwt_require_claim, jwt_required
 from warehouse.models import (
-    BiologicalEntity, BiologicalEntityType, Experiment, Measurement, Medium, Namespace, Organism, Sample, Strain, Unit)
-from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_measurement_by_id, get_sample_by_id
+    BiologicalEntity, BiologicalEntityType, Condition, Experiment, Medium, Namespace, Organism, Sample, Strain, Unit)
+from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_condition_by_id, get_sample_by_id
 
 
-base_schema = {
-    'project_id': fields.Integer,
-    'id': fields.Integer,
-    'name': fields.String,
-    'created': fields.DateTime,
-    'updated': fields.DateTime,
-}
+def init_app(app):
+    """Register API resources on the provided Flask application."""
+    def register(path, resource, name):
+        app.add_url_rule(path, view_func=resource.as_view(name))
+        docs.register(resource, endpoint=name)
 
-organism_schema = api.model('Organism', base_schema)
-namespace_schema = api.model('Namespace', base_schema)
-type_schema = api.model('BiologicalEntityType', base_schema)
-unit_schema = api.model('UnitType', base_schema)
-
-experiment_schema = api.model('Experiment', {**base_schema, **{
-    'description': fields.String,
-}})
-
-strain_schema = api.model('Strain', {**base_schema, **{
-    'parent_id': fields.Integer,
-    'genotype': fields.String,
-    'organism_id': fields.Integer,
-}})
-
-biological_entity_schema = api.model('BiologicalEntity', {**base_schema, **{
-    'namespace_id': fields.Integer,
-    'reference': fields.String,
-    'type_id': fields.Integer,
-}})
-
-medium_compound_schema = api.model('MediumCompound', {**biological_entity_schema, **{
-    'mass_concentration': fields.Float
-}})
-
-medium_compound_simple_schema = api.model('MediumCompoundSimple', {
-    'id': fields.Integer,
-    'mass_concentration': fields.Float,
-})
-
-medium_schema = api.model('Medium', {**base_schema, **{
-    'ph': fields.Float,
-    'compounds': fields.List(fields.Nested(medium_compound_schema)),
-}})
-
-medium_simple_schema = api.model('MediumSimple', {**base_schema, **{
-    'ph': fields.Float,
-    'compounds': fields.List(fields.Nested(medium_compound_simple_schema)),
-}})
-
-sample_schema = api.model('Sample', {
-    'created': fields.DateTime,
-    'updated': fields.DateTime,
-    'id': fields.Integer,
-    'experiment_id': fields.Integer,
-    'name': fields.String,
-    'protocol': fields.String,
-    'temperature': fields.Float,
-    'aerobic': fields.Boolean,
-    'strain_id': fields.Integer,
-    'medium_id': fields.Integer,
-    'feed_medium_id': fields.Integer,
-})
-
-measurement_schema = api.model('Measurement', {
-    'created': fields.DateTime,
-    'updated': fields.DateTime,
-    'id': fields.Integer,
-    'sample_id': fields.Integer,
-    'datetime_start': fields.DateTime,
-    'datetime_end': fields.DateTime,
-    'numerator_id': fields.Integer,
-    'denominator_id': fields.Integer,
-    'value': fields.Float,
-    'unit_id': fields.Integer,
-})
+    docs = FlaskApiSpec(app)
+    register('/organisms', OrganismList, "OrganismList")
+    register('/organisms/<int:id>', Organisms, "Organisms")
+    register('/namespaces', NamespaceList, "NamespaceList")
+    register('/namespaces/<int:id>', Namespaces, "Namespaces")
+    register('/types', TypeList, "TypeList")
+    register('/types/<int:id>', Types, "Types")
+    register('/units', UnitList, "UnitList")
+    register('/units/<int:id>', Units, "Units")
+    register('/experiments', ExperimentList, "ExperimentList")
+    register('/experiments/<int:id>', Experiments, "Experiments")
+    register('/strains', StrainList, "StrainList")
+    register('/strains/<int:id>', Strains, "Strains")
+    register('/bioentities', BiologicalEntityList, "BiologicalEntityList")
+    register('/bioentities/<int:id>', BiologicalEntities, "BiologicalEntities")
+    register('/bioentities/compounds', Chemicals, "Chemicals")
+    register('/media', MediaList, "MediaList")
+    register('/media/<int:id>', Media, "Media")
+    register('/experiments/<int:experiment_id>/conditions', ExperimentConditionList, "ExperimentConditionList")
+    register('/conditions/<int:id>', Conditions, "Conditions")
+    register('/conditions/<int:condition_id>/data', ConditionDataList, "ConditionDataList")
+    register('/conditions/<int:condition_id>/samples', ConditionSampleList, "ConditionSampleList")
+    register('/samples/<int:id>', Samples, "Samples")
 
 
-def post(obj, *args, **kwargs):
-    if isinstance(api.payload, dict):
-        return obj.post_one(api.payload, *args, **kwargs)
-    elif isinstance(api.payload, list):
-        return [obj.post_one(data, *args, **kwargs) for data in api.payload]
-    else:
-        raise ValueError(f"Unsupported API payload type '{type(api.payload)}'")
-
-
-def crud_class_factory(model, route, schema, name, name_plural=None, check_permissions=None):
+def crud_class_factory(model, schema, name, name_plural=None, check_permissions=None):
     if name_plural is None:
         name_plural = name + 's'
 
-    def docstring(*sub):
-        def inner(obj):
-            obj.__doc__ = obj.__doc__.format(*sub)
-            return obj
-        return inner
-
-    @api.route(route)
-    class List(Resource):
-        @api.marshal_with(schema)
-        @docstring(name_plural)
+    class List(MethodResource):
+        @marshal_with(schema(many=True))
+        @doc(f"List all the {name_plural}")
         def get(self):
-            """List all the {}"""
             # Note: claims are not checked, the query will be filtered by read access
             return CRUD.get(model)
 
-        def post_one(self, data):
-            """Create a {}"""
-            # TODO: logically, jwt claim check should occur after check for project_id
-            if 'project_id' in data:
-                jwt_require_claim(data['project_id'], 'write')
-            return CRUD.post(data, model, check_permissions=check_permissions)
-
-        @api.response(403, 'Forbidden')
-        @api.response(404, 'Not Found')
-        @api.response(409, 'Constraint is not satisfied')
-        @api.marshal_with(schema)
-        @api.expect(schema)
         @jwt_required
-        @docstring(name)
-        def post(self):
-            """Create a {} (accepts an object or an array of objects)"""
-            # Note: claims will be checked later per instance posted
-            return post(self)
+        @use_kwargs(schema)
+        @marshal_with(schema, 200)
+        @marshal_with(None, 403)
+        @marshal_with(None, 404)
+        @marshal_with(None, 409)
+        @doc(f"Create a {name}")
+        def post(self, **payload):
+            # TODO: logically, jwt claim check should occur after check for project_id
+            if 'project_id' in payload:
+                jwt_require_claim(payload['project_id'], 'write')
+            return CRUD.post(payload, model, check_permissions=check_permissions)
 
-    @api.route(route + '/<int:id>')
-    @api.response(404, 'Not Found')
-    @api.param('id', 'The identifier')
-    class Item(Resource):
-        @api.marshal_with(schema)
-        @docstring(name)
+
+    class Item(MethodResource):
+        @marshal_with(schema)
+        @doc(f"Get the {name} by id")
         def get(self, id):
-            """Get the {} by id"""
             # Note: claims are not checked, the query will be filtered by read access
             return CRUD.get_by_id(model, id)
 
         # TODO: archive instead of delete
-        @api.response(403, 'Forbidden')
         @jwt_required
-        @docstring(name)
+        @marshal_with(None, 403)
+        @marshal_with(None, 404)
+        @doc(f"Delete the {name} by id")
         def delete(self, id):
-            """Delete the {} by id"""
             object_ = CRUD.get_by_id(model, id)
             jwt_require_claim(object_.project_id, 'admin')
             CRUD.delete(model, id)
 
-        @api.response(403, 'Forbidden')
-        @api.response(409, 'Constraint is not satisfied')
-        @api.marshal_with(schema)
-        @api.expect(schema)
         @jwt_required
-        @docstring(name)
-        def put(self, id):
-            """Update the {} by id"""
+        @use_kwargs(schema)
+        @marshal_with(schema, 200)
+        @marshal_with(None, 403)
+        @marshal_with(None, 404)
+        @marshal_with(None, 409)
+        @doc(f"Update the {name} by id")
+        def put(self, id, **payload):
             object_ = CRUD.get_by_id(model, id)
             jwt_require_claim(object_.project_id, 'write')
-            return CRUD.put(api.payload, model, id, check_permissions=check_permissions)
+            return CRUD.put(payload, model, id, check_permissions=check_permissions)
 
     return List, Item
 
 
-OrganismList, Organisms = crud_class_factory(Organism, '/organisms', organism_schema, 'organism')
-NamespaceList, Namespaces = crud_class_factory(Namespace, '/namespaces', namespace_schema, 'namespace')
-TypeList, Types = crud_class_factory(BiologicalEntityType, '/types', type_schema, 'biological entity type')
-UnitList, Units = crud_class_factory(Unit, '/units', unit_schema, 'unit')
-ExperimentList, Experiments = crud_class_factory(Experiment, '/experiments', experiment_schema, 'experiment')
+OrganismList, Organisms = crud_class_factory(Organism, schemas.Organism, 'organism')
+NamespaceList, Namespaces = crud_class_factory(Namespace, schemas.Namespace, 'namespace')
+TypeList, Types = crud_class_factory(BiologicalEntityType, schemas.BiologicalEntityType, 'biological entity type')
+UnitList, Units = crud_class_factory(Unit, schemas.Unit, 'unit')
+ExperimentList, Experiments = crud_class_factory(Experiment, schemas.Experiment, 'experiment')
 StrainList, Strains = crud_class_factory(
     Strain,
-    '/strains',
-    strain_schema,
+    schemas.Strain,
     'strain',
     check_permissions={'parent_id': Strain, 'organism_id': Organism},
 )
 BiologicalEntityList, BiologicalEntities = crud_class_factory(
     BiologicalEntity,
-    '/bioentities',
-    biological_entity_schema,
+    schemas.BiologicalEntity,
     'biological entity',
     'biological entities',
     check_permissions={'namespace_id': Namespace, 'type_id': BiologicalEntityType},
@@ -209,42 +139,23 @@ def query_compounds(query):
     return query.join(BiologicalEntity.type).filter(BiologicalEntityType.name == 'compound')
 
 
-@api.route('/bioentities/compounds')
-class Chemicals(Resource):
-    @api.marshal_with(biological_entity_schema)
+class Chemicals(MethodResource):
+    @marshal_with(schemas.BiologicalEntity(many=True))
+    @doc(description="List all the compounds")
     def get(self):
-        """List all the compounds"""
         # Note: claims are not checked, the query will be filtered by read access
         return query_compounds(CRUD.get_query(BiologicalEntity)).all()
 
 
-@api.marshal_with(medium_schema)
-def serialized_medium(medium):
-    return medium
-
-
-@marshal_with_field(fields.List(fields.Nested(medium_compound_schema)))
-def serialized_compounds(medium):
-    return medium.compounds
-
-
-def serialized_compounds_with_mass_concentrations(medium):
-    # TODO: join?
-    compositions = {c.compound_id: c.mass_concentration for c in medium.composition}
-    compounds = serialized_compounds(medium)
-    for compound in compounds:
-        compound['mass_concentration'] = compositions[compound['id']]
-    return compounds
-
-
-def serialized_medium_with_mass_concentrations(m):
-    serialized = serialized_medium(m)
-    serialized['compounds'] = serialized_compounds_with_mass_concentrations(m)
-    return serialized
-
-
 class NotCompound(Exception):
     pass
+
+
+def medium_with_mass_concentrations(medium):
+    compositions = {c.compound_id: c.mass_concentration for c in medium.composition}
+    for compound in medium.compounds:
+        compound.mass_concentration = compositions[compound.id]
+    return medium
 
 
 # TODO: make a copy if the compounds are from the different project
@@ -262,200 +173,238 @@ def set_compounds_from_payload(data, medium):
     constraint_check(db)
 
 
-@api.route('/media')
-class MediaList(Resource):
-    @api.marshal_with(medium_schema)
+class MediaList(MethodResource):
+    @marshal_with(schemas.Medium(many=True))
+    @doc(description="List all the media and their recipes")
     def get(self):
-        """List all the media and their recipes"""
         # Note: claims are not checked, the query will be filtered by read access
         result = []
         media = CRUD.get(Medium)
         for m in media:
-            serialized = serialized_medium_with_mass_concentrations(m)
+            serialized = medium_with_mass_concentrations(m)
             result.append(serialized)
         return result
 
-    def post_one(self, data):
-        """Create one medium"""
+    @jwt_required
+    @use_kwargs(schemas.MediumSimple)
+    @marshal_with(schemas.Medium)
+    @doc(description="Create one medium by defining the recipe")
+    def post(self, **payload):
         # TODO: logically, jwt claim check should occur after check for project_id
-        if 'project_id' in data:
-            jwt_require_claim(data['project_id'], 'write')
+        if 'project_id' in payload:
+            jwt_require_claim(payload['project_id'], 'write')
         medium = Medium(
-            project_id=data['project_id'],
-            name=data['name'],
-            ph=data['ph'],
+            project_id=payload['project_id'],
+            name=payload['name'],
+            ph=payload['ph'],
         )
         try:
-            set_compounds_from_payload(data, medium)
+            set_compounds_from_payload(payload, medium)
         except NotCompound:
-            api.abort(404, "No such compound")
-        return serialized_medium_with_mass_concentrations(medium)
-
-    @api.marshal_with(medium_schema)
-    @api.expect(medium_simple_schema)
-    @jwt_required
-    def post(self):
-        """Create a medium by defining the recipe (accepts an object or an array of objects)"""
-        # Note: claims will be checked later per instance posted
-        return post(self)
+            abort(404, "No such compound")
+        return medium_with_mass_concentrations(medium)
 
 
-@api.route('/media/<int:id>')
-@api.response(404, 'Not found')
-@api.param('id', 'The identifier')
-class Media(Resource):
-    @api.marshal_with(medium_schema)
+class Media(MethodResource):
+    @marshal_with(schemas.Medium)
+    @doc(description="Get the medium by id")
     def get(self, id):
-        """Get the medium by id"""
-        return serialized_medium_with_mass_concentrations(CRUD.get_by_id(Medium, id))
+        return medium_with_mass_concentrations(CRUD.get_by_id(Medium, id))
 
     @jwt_required
+    @doc(description="Delete the medium by id - compounds will not be deleted")
     def delete(self, id):
-        """Delete the medium by id - compounds will not be deleted"""
         medium = CRUD.get_by_id(Medium, id)
         jwt_require_claim(medium.project_id, 'admin')
         CRUD.delete(Medium, id)
 
-    @api.marshal_with(medium_schema)
-    @api.expect(medium_simple_schema)
     @jwt_required
-    def put(self, id):
-        """Update the medium by id"""
+    @use_kwargs(schemas.MediumSimple)
+    @marshal_with(schemas.Medium, 200)
+    @marshal_with(None, 404)
+    @doc(description="Update the medium by id")
+    def put(self, id, **payload):
         medium = CRUD.get_by_id(Medium, id)
         jwt_require_claim(medium.project_id, 'write')
         try:
-            set_compounds_from_payload(api.payload, medium)
+            set_compounds_from_payload(payload, medium)
         except NotCompound:
-            api.abort(404, "No such compound")
-        return serialized_medium_with_mass_concentrations(medium)
+            abort(404, "No such compound")
+        return medium_with_mass_concentrations(medium)
 
 
-@api.route('/experiments/<int:experiment_id>/samples')
-@api.response(404, 'Not found')
-@api.param('experiment_id', 'The experiment identifier')
-class ExperimentSampleList(Resource):
-    @api.marshal_with(sample_schema)
+class ExperimentConditionList(MethodResource):
+    @marshal_with(schemas.Condition(many=True))
+    @doc(description="List all the conditions for the given experiment")
     def get(self, experiment_id):
-        """List all the samples for the given experiment"""
-        return CRUD.get_by_id(Experiment, experiment_id).samples.all()
+        return CRUD.get_by_id(Experiment, experiment_id).conditions.all()
 
-    def post_one(self, data, experiment_id):
-        """Create one sample"""
+    @jwt_required
+    @use_kwargs(schemas.Condition)
+    @marshal_with(schemas.Condition)
+    @doc(description="Create one condition")
+    def post(self, experiment_id, **payload):
         experiment = CRUD.get_by_id(Experiment, experiment_id)
         jwt_require_claim(experiment.project_id, 'write')
-        data['experiment_id'] = experiment_id
-        sample = CRUD.post(data, Sample, check_permissions={
+        payload['experiment_id'] = experiment_id
+        condition = CRUD.post(payload, Condition, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
             'feed_medium_id': Medium,
             'experiment_id': Experiment
         }, project_id=False)
-        return sample
-
-    @api.marshal_with(sample_schema)
-    @api.expect(sample_schema)
-    @jwt_required
-    def post(self, experiment_id):
-        """Create a sample (accepts an object or an array of objects)"""
-        # Note: claims will be checked later per instance posted
-        return post(self, experiment_id)
+        return condition
 
 
-@api.route('/samples/<int:id>')
-@api.response(404, 'Not found')
-@api.param('id', 'The identifier')
-class Samples(Resource):
-    @api.marshal_with(sample_schema)
+class Conditions(MethodResource):
+    @marshal_with(schemas.Condition, 200)
+    @marshal_with(None, 404)
+    @doc(description="Get a condition by id")
     def get(self, id):
-        """Get a sample by id"""
-        return get_sample_by_id(id)
+        return get_condition_by_id(id)
 
     @jwt_required
+    @marshal_with(None, 404)
+    @doc(description="Delete a condition by id - associated samples will be deleted as well")
     def delete(self, id):
-        """Delete a sample by id - associated measurements will be deleted as well"""
-        sample = get_sample_by_id(id)
-        jwt_require_claim(sample.experiment.project_id, 'admin')
-        db.session.delete(sample)
+        condition = get_condition_by_id(id)
+        jwt_require_claim(condition.experiment.project_id, 'admin')
+        db.session.delete(condition)
         constraint_check(db)
 
-    @api.marshal_with(medium_schema)
-    @api.expect(medium_simple_schema)
     @jwt_required
-    def put(self, id):
-        """Update a sample by id"""
-        sample = get_sample_by_id(id)
-        jwt_require_claim(sample.experiment.project_id, 'write')
-        CRUD.modify_object(api.payload, sample, check_permissions={
+    @use_kwargs(schemas.Condition)
+    @marshal_with(schemas.Condition, 200)
+    @marshal_with(None, 404)
+    @doc(description="Update a condition by id")
+    def put(self, id, **payload):
+        condition = get_condition_by_id(id)
+        jwt_require_claim(condition.experiment.project_id, 'write')
+        CRUD.modify_object(payload, condition, check_permissions={
             'strain_id': Strain,
             'medium_id': Medium,
             'feed_medium_id': Medium,
             'experiment_id': Experiment,
         })
-        db.session.merge(sample)
+        db.session.merge(condition)
         constraint_check(db)
+        return condition
+
+
+class ConditionDataList(MethodResource):
+    @marshal_with(schemas.ModelingData())
+    @doc(description="List modeling data for the given condition")
+    def get(self, condition_id):
+        condition = get_condition_by_id(condition_id)
+
+        def bigg_namespace(namespace, type):
+            """Correct the BIGG namespace to the actual miriam identifier."""
+            if namespace == "BIGG":
+                if type == "metabolite":
+                    return "bigg.metabolite"
+                elif type == "reaction":
+                    return "bigg.reaction"
+            return namespace
+
+        medium = [{
+            'id': compound.reference,
+            'namespace': bigg_namespace(compound.namespace.name, "metabolite"),
+        } for compound in condition.medium.compounds]
+
+        def iterate(genotype, strain):
+            # Wild type strains have empty strings in the genotype
+            if strain.genotype:
+                genotype.append(strain.genotype)
+            if strain.parent:
+                iterate(genotype, strain.parent[0])
+            return genotype
+        genotype = iterate([], condition.strain)
+
+        growth_rate = None
+        measurements = []
+        for sample in condition.samples.all():
+            if sample.is_growth_rate():
+                growth_rate = {
+                    'measurements': [sample.value],
+                }
+            elif sample.is_fluxomics():
+                measurements.append({
+                    'id': sample.numerator.reference,
+                    'namespace': bigg_namespace(sample.numerator.namespace.name, "reaction"),
+                    'measurements': [sample.value],
+                    'type': sample.numerator.type.name,
+                })
+            elif sample.is_metabolomics():
+                measurements.append({
+                    "id": sample.numerator.reference,
+                    "namespace": bigg_namespace(sample.numerator.namespace.name, "metabolite"),
+                    "measurements": [sample.value],
+                    "type": sample.numerator.type.name,
+                })
+            # TODO (Ali Kaafarani): include proteomics
+
+        return {
+            'medium': medium,
+            'genotype': genotype,
+            'growth_rate': growth_rate,
+            'measurements': measurements,
+        }
+
+
+class ConditionSampleList(MethodResource):
+    @marshal_with(schemas.Sample(many=True))
+    @doc(description="List all the samples for the given condition")
+    def get(self, condition_id):
+        condition = get_condition_by_id(condition_id)
+        return condition.samples.all()
+
+    @jwt_required
+    @use_kwargs(schemas.Sample)
+    @marshal_with(schemas.Sample)
+    @doc(description="Create a sample for the condition")
+    def post(self, condition_id, **payload):
+        condition = get_condition_by_id(condition_id)
+        jwt_require_claim(condition.experiment.project_id, 'write')
+        payload['condition_id'] = condition_id
+        sample = CRUD.post(payload, Sample, check_permissions={
+            'numerator_id': BiologicalEntity,
+            'denominator_id': BiologicalEntity,
+            'unit_id': Unit,
+            'condition_id': Condition,
+        }, project_id=False)
         return sample
 
 
-@api.route('/samples/<int:sample_id>/measurements')
-class SampleMeasurementList(Resource):
-    @api.marshal_with(measurement_schema)
-    def get(self, sample_id):
-        """List all the measurements for the given sample"""
-        sample = get_sample_by_id(sample_id)
-        return sample.measurements.all()
-
-    def post_one(self, data, sample_id):
-        """Post one measurement"""
-        sample = get_sample_by_id(sample_id)
-        jwt_require_claim(sample.experiment.project_id, 'write')
-        data['sample_id'] = sample_id
-        measurement = CRUD.post(data, Measurement, check_permissions={
-            'numerator_id': BiologicalEntity,
-            'denominator_id': BiologicalEntity,
-            'unit_id': Unit,
-            'sample_id': Sample,
-        }, project_id=False)
-        return measurement
-
-    @api.marshal_with(measurement_schema)
-    @api.expect(measurement_schema)
-    @jwt_required
-    def post(self, sample_id):
-        """Create measurements for the sample (accepts an object or an array of objects)"""
-        # Note: claims will be checked later per instance posted
-        return post(self, sample_id)
-
-
-@api.route('/measurements/<int:id>')
-@api.response(404, 'Not found')
-@api.param('id', 'The identifier')
-class Measurements(Resource):
-    @api.marshal_with(measurement_schema)
+class Samples(MethodResource):
+    @marshal_with(schemas.Sample, 200)
+    @marshal_with(None, 404)
+    @doc(description="Get a sample by id")
     def get(self, id):
-        """Get a measurement by id"""
-        return get_measurement_by_id(id)
+        return get_sample_by_id(id)
 
     @jwt_required
+    @marshal_with(None, 404)
+    @doc(description="Delete a sample by id")
     def delete(self, id):
-        """Delete a measurement by id"""
-        measurement = get_measurement_by_id(id)
-        jwt_require_claim(measurement.sample.experiment.project_id, 'admin')
-        db.session.delete(measurement)
+        sample = get_sample_by_id(id)
+        jwt_require_claim(sample.condition.experiment.project_id, 'admin')
+        db.session.delete(sample)
         constraint_check(db)
 
-    @api.marshal_with(measurement_schema)
-    @api.expect(measurement_schema)
     @jwt_required
-    def put(self, id):
-        """Update a measurement by id"""
-        measurement = get_measurement_by_id(id)
-        jwt_require_claim(measurement.sample.experiment.project_id, 'write')
-        CRUD.modify_object(api.payload, measurement, check_permissions={
+    @use_kwargs(schemas.Sample)
+    @marshal_with(schemas.Sample, 200)
+    @marshal_with(None, 404)
+    @doc(description="Update a sample by id")
+    def put(self, id, **payload):
+        sample = get_sample_by_id(id)
+        jwt_require_claim(sample.condition.experiment.project_id, 'write')
+        CRUD.modify_object(payload, sample, check_permissions={
             'numerator_id': BiologicalEntity,
             'denominator_id': BiologicalEntity,
             'unit_id': Unit,
-            'sample_id': Sample,
+            'condition_id': Condition,
         })
-        db.session.merge(measurement)
+        db.session.merge(sample)
         constraint_check(db)
-        return measurement
+        return sample

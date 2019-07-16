@@ -14,10 +14,6 @@ network:
 	docker network inspect DD-DeCaF >/dev/null 2>&1 || \
 		docker network create DD-DeCaF
 
-## Create docker database volume
-volume:
-	docker volume create --name=warehouse
-
 ## Build local docker images.
 build: network volume
 	docker-compose build
@@ -34,39 +30,29 @@ style: flake8 isort license
 
 ## Run the tests.
 test:
-	-docker-compose run --rm -e ENVIRONMENT=testing -e POSTGRES_DB_NAME=testing web \
+	-docker-compose run --rm -e ENVIRONMENT=testing web \
 		pytest --cov=src/warehouse tests
 
 ## Run the tests and report coverage (see https://docs.codecov.io/docs/testing-with-docker).
+shared := /tmp/coverage
 test-travis:
-	$(eval ci_env=$(shell bash <(curl -s https://codecov.io/env)))
-	docker-compose run --rm -e ENVIRONMENT=testing $(ci_env)  web \
-		/bin/sh -c "pytest --cov=src/warehouse tests && codecov"
+	mkdir --parents "$(shared)"
+	docker-compose run --rm -e ENVIRONMENT=testing -v "$(shared):$(shared)" \
+		web pytest --cov-report "xml:$(shared)/coverage.xml" --cov-report term \
+		--cov=src/warehouse
+	bash <(curl -s https://codecov.io/bash) -f "$(shared)/coverage.xml"
 
-## Init the alembic
-init:
-	docker-compose run --rm -e ENVIRONMENT=development  web \
-		/bin/sh -c "flask db init"
+## Create the testing database.
+databases:
+	docker-compose up -d postgres
+	./scripts/wait_for_postgres.sh
+	docker-compose exec postgres psql -U postgres -c "create database testing;"
+	docker-compose run --rm web flask db upgrade
+	docker-compose stop
 
-## Autogenerate a migration revision
-revision:
-	docker-compose run --rm -e ENVIRONMENT=development  web \
-		/bin/sh -c "flask db revision --message $(message) --autogenerate"
-
-## Upgrade the database
-upgrade:
-	docker-compose run --rm -e ENVIRONMENT=development web \
-		/bin/sh -c "flask db upgrade $(args)"
-
-## Downgrade the database
-downgrade:
-	docker-compose run --rm -e ENVIRONMENT=development web \
-		/bin/sh -c "flask db downgrade $(args)"
-
-## Downgrade the database
+## Install fixtures
 fixture:
-	docker-compose run --rm -e ENVIRONMENT=development web \
-		/bin/sh -c "./src/manage.py fixtures populate"
+	docker-compose run --rm web ./src/manage.py fixtures populate
 
 ## Run flake8.
 flake8:
