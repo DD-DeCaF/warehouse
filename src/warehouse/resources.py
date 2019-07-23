@@ -308,6 +308,7 @@ class ConditionDataList(MethodResource):
 
         medium = [{
             'id': compound.reference,
+            'name': compound.name,
             'namespace': bigg_namespace(compound.namespace.name, "metabolite"),
         } for compound in condition.medium.compounds]
 
@@ -330,6 +331,7 @@ class ConditionDataList(MethodResource):
             elif sample.is_fluxomics():
                 measurements.append({
                     'id': sample.numerator.reference,
+                    'name': sample.numerator.name,
                     'namespace': bigg_namespace(sample.numerator.namespace.name, "reaction"),
                     'measurements': [sample.value],
                     'type': sample.numerator.type.name,
@@ -337,6 +339,7 @@ class ConditionDataList(MethodResource):
             elif sample.is_metabolomics():
                 measurements.append({
                     "id": sample.numerator.reference,
+                    "name": sample.numerator.name,
                     "namespace": bigg_namespace(sample.numerator.namespace.name, "metabolite"),
                     "measurements": [sample.value],
                     "type": sample.numerator.type.name,
