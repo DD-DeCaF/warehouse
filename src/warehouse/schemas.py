@@ -117,6 +117,7 @@ class Sample(StrictSchema):
 
 class MediumCompound(Schema):
     id = fields.String(required=True)
+    name = fields.String(required=True)
     # Note: namespace should match a namespace identifier from miriam.
     # See https://www.ebi.ac.uk/miriam/main/collections
     namespace = fields.String(required=True)
@@ -124,6 +125,7 @@ class MediumCompound(Schema):
 
 class Measurement(Schema):
     id = fields.String(required=True)
+    name = fields.String(required=True)
     # Note: namespace should match a namespace identifier from miriam.
     # See https://www.ebi.ac.uk/miriam/main/collections
     namespace = fields.String(required=True)
