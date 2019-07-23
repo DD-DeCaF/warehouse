@@ -31,19 +31,19 @@ class Base(StrictSchema):
 
 
 class Organism(Base):
-  pass
+    pass
 
 
 class Namespace(Base):
-  pass
+    pass
 
 
 class BiologicalEntityType(Base):
-  pass
+    pass
 
 
 class Unit(Base):
-  pass
+    pass
 
 
 class Experiment(Base):
