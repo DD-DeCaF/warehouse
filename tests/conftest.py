@@ -52,37 +52,43 @@ def db(app):
 @pytest.fixture(scope="session")
 def tokens_admin(app):
     """Provides JWTs with admin claims to different projects"""
-    return [{
-        'token': jwt.encode({'prj': claims}, app.config['JWT_PRIVATE_KEY'], 'RS512'),
-        'claims': claims,
-        'projects': list(claims.keys()),
-    } for claims in [
-        {1: 'admin', 2: 'admin'},
-        {4: 'admin'},
-    ]]
+    return [
+        {
+            "token": jwt.encode(
+                {"prj": claims}, app.config["JWT_PRIVATE_KEY"], "RS512"
+            ),
+            "claims": claims,
+            "projects": list(claims.keys()),
+        }
+        for claims in [{1: "admin", 2: "admin"}, {4: "admin"}]
+    ]
 
 
 @pytest.fixture(scope="session")
 def tokens_write(app):
     """Provides JWTs with write claims to different projects"""
-    return [{
-        'token': jwt.encode({'prj': claims}, app.config['JWT_PRIVATE_KEY'], 'RS512'),
-        'claims': claims,
-        'projects': list(claims.keys()),
-    } for claims in [
-        {1: 'write', 2: 'write'},
-        {4: 'write'},
-    ]]
+    return [
+        {
+            "token": jwt.encode(
+                {"prj": claims}, app.config["JWT_PRIVATE_KEY"], "RS512"
+            ),
+            "claims": claims,
+            "projects": list(claims.keys()),
+        }
+        for claims in [{1: "write", 2: "write"}, {4: "write"}]
+    ]
 
 
 @pytest.fixture(scope="session")
 def tokens_read(app):
     """Provides JWTs with read claims to different projects"""
-    return [{
-        'token': jwt.encode({'prj': claims}, app.config['JWT_PRIVATE_KEY'], 'RS512'),
-        'claims': claims,
-        'projects': list(claims.keys()),
-    } for claims in [
-        {1: 'read', 2: 'read'},
-        {4: 'read'},
-    ]]
+    return [
+        {
+            "token": jwt.encode(
+                {"prj": claims}, app.config["JWT_PRIVATE_KEY"], "RS512"
+            ),
+            "claims": claims,
+            "projects": list(claims.keys()),
+        }
+        for claims in [{1: "read", 2: "read"}, {4: "read"}]
+    ]

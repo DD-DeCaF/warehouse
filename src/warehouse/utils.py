@@ -23,12 +23,14 @@ from warehouse.models import BiologicalEntity, Condition, Experiment, Medium, Sa
 
 
 def filter_by_jwt_claims(model):
-    projects = [int(id) for id in g.jwt_claims['prj'].keys()]
+    projects = [int(id) for id in g.jwt_claims["prj"].keys()]
     return filter_by_projects(model, projects)
 
 
 def filter_by_projects(model, projects):
-    return model.query.filter(model.project_id.in_(projects) | model.project_id.is_(None))
+    return model.query.filter(
+        model.project_id.in_(projects) | model.project_id.is_(None)
+    )
 
 
 def get_object(model, object_id):
@@ -60,47 +62,45 @@ def get_sample_by_id(sample_id):
     sample = Sample.query.get(sample_id)
     if sample is None:
         abort(404, "No such sample")
-    query = filter_by_jwt_claims(Experiment).filter_by(id=sample.condition.experiment.id)
+    query = filter_by_jwt_claims(Experiment).filter_by(
+        id=sample.condition.experiment.id
+    )
     if not query.count():
         abort(404, "No such sample")
     return sample
 
 
 def add_from_file(file_object, model):
-    if model.__tablename__ == 'medium':
+    if model.__tablename__ == "medium":
         return add_media_from_file(file_object)
-    app.logger.debug('Started loading the file')
+    app.logger.debug("Started loading the file")
     for line in file_object:
         obj = json.loads(line)
         new_object = model(**obj)
         db.session.add(new_object)
         db.session.flush()
     db.session.commit()
-    app.logger.debug('{}: {} objects in db'.format(model, model.query.count()))
+    app.logger.debug("{}: {} objects in db".format(model, model.query.count()))
 
 
 def add_media_from_file(file_object):
     for line in file_object:
         obj = json.loads(line)
-        composition = dict(zip(obj['compounds'], obj['mass_concentrations']))
-        medium_obj = dict(
-            project_id=obj['project_id'],
-            name=obj['name'],
-            ph=obj['ph'],
-        )
-        if 'id' in obj:
-            medium_obj['id'] = obj['id']
-        medium = Medium(
-            **medium_obj
-        )
-        medium.compounds = BiologicalEntity.query.filter(BiologicalEntity.id.in_(obj['compounds'])).all()
+        composition = dict(zip(obj["compounds"], obj["mass_concentrations"]))
+        medium_obj = dict(project_id=obj["project_id"], name=obj["name"], ph=obj["ph"])
+        if "id" in obj:
+            medium_obj["id"] = obj["id"]
+        medium = Medium(**medium_obj)
+        medium.compounds = BiologicalEntity.query.filter(
+            BiologicalEntity.id.in_(obj["compounds"])
+        ).all()
         db.session.add(medium)
         db.session.flush()
         for c in medium.composition:
             c.mass_concentration = composition[c.compound_id]
         db.session.flush()
     db.session.commit()
-    app.logger.debug('Medium: added, {} objects in db'.format(Medium.query.count()))
+    app.logger.debug("Medium: added, {} objects in db".format(Medium.query.count()))
 
 
 class CRUD(object):
@@ -115,10 +115,10 @@ class CRUD(object):
     @classmethod
     def post(cls, data, model, check_permissions=None, project_id=True):
         if project_id:
-            if data.get('project_id', None) is None:
-                abort(403, 'Project ID is not set')
+            if data.get("project_id", None) is None:
+                abort(403, "Project ID is not set")
             else:
-                obj = model(project_id=data['project_id'])
+                obj = model(project_id=data["project_id"])
         else:
             obj = model()
         cls.modify_object(data, obj, check_permissions=check_permissions)
@@ -152,9 +152,9 @@ class CRUD(object):
             # TODO: verify that linked object is in the same project - if not, it should probably be copied and not
             # linked
             if field in check_permissions and new_value is not None:
-                if field == 'condition_id':
+                if field == "condition_id":
                     get_condition_by_id(new_value)
                 else:
                     get_object(check_permissions[field], new_value)
-            if field != 'id' and field != 'project_id':
+            if field != "id" and field != "project_id":
                 setattr(obj, field, new_value)

@@ -24,14 +24,17 @@ def test_iam(monkeypatch, client):
     # Patch the app config with the current JWT public key from IAM
     response = requests.get(f"{os.environ['IAM_API']}/keys")
     response.raise_for_status()
-    monkeypatch.setitem(app.config, 'JWT_PUBLIC_KEY', response.json()["keys"][0])
+    monkeypatch.setitem(app.config, "JWT_PUBLIC_KEY", response.json()["keys"][0])
 
     # Authenticate as test user
-    response = requests.post(f"{os.environ['IAM_API']}/authenticate/local", data={'email': "test", 'password': "test"})
+    response = requests.post(
+        f"{os.environ['IAM_API']}/authenticate/local",
+        data={"email": "test", "password": "test"},
+    )
     response.raise_for_status()
     result = response.json()
 
     # Request to local endpoints with the given JWT should be accepted
-    headers = {'Authorization': f"Bearer {result['jwt']}"}
-    response = client.get('/experiments', headers=headers)
+    headers = {"Authorization": f"Bearer {result['jwt']}"}
+    response = client.get("/experiments", headers=headers)
     assert response.status_code == 200

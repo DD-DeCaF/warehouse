@@ -15,7 +15,17 @@
 from flask_script import Manager
 
 from warehouse.models import (
-    BiologicalEntity, BiologicalEntityType, Condition, Experiment, Medium, Namespace, Organism, Sample, Strain, Unit)
+    BiologicalEntity,
+    BiologicalEntityType,
+    Condition,
+    Experiment,
+    Medium,
+    Namespace,
+    Organism,
+    Sample,
+    Strain,
+    Unit,
+)
 from warehouse.utils import add_from_file
 
 
@@ -23,62 +33,62 @@ Fixtures = Manager(usage="Populate the database with fixtures")
 
 
 @Fixtures.command
-def organisms(filepath='fixtures/organisms.json'):
-    with open(filepath, 'r') as f:
+def organisms(filepath="fixtures/organisms.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, Organism)
 
 
 @Fixtures.command
-def strains(filepath='fixtures/strains.json'):
-    with open(filepath, 'r') as f:
+def strains(filepath="fixtures/strains.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, Strain)
 
 
 @Fixtures.command
-def namespaces(filepath='fixtures/namespaces.json'):
-    with open(filepath, 'r') as f:
+def namespaces(filepath="fixtures/namespaces.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, Namespace)
 
 
 @Fixtures.command
-def types(filepath='fixtures/types.json'):
-    with open(filepath, 'r') as f:
+def types(filepath="fixtures/types.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, BiologicalEntityType)
 
 
 @Fixtures.command
-def units(filepath='fixtures/units.json'):
-    with open(filepath, 'r') as f:
+def units(filepath="fixtures/units.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, Unit)
 
 
 @Fixtures.command
-def biological_entities(filepath='fixtures/biological_entities.json'):
-    with open(filepath, 'r') as f:
+def biological_entities(filepath="fixtures/biological_entities.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, BiologicalEntity)
 
 
 @Fixtures.command
-def experiments(filepath='fixtures/experiments.json'):
-    with open(filepath, 'r') as f:
+def experiments(filepath="fixtures/experiments.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, Experiment)
 
 
 @Fixtures.command
-def conditions(filepath='fixtures/conditions.json'):
-    with open(filepath, 'r') as f:
+def conditions(filepath="fixtures/conditions.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, Condition)
 
 
 @Fixtures.command
-def samples(filepath='fixtures/samples.json'):
-    with open(filepath, 'r') as f:
+def samples(filepath="fixtures/samples.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, Sample)
 
 
 @Fixtures.command
-def media(filepath='fixtures/media.json'):
-    with open(filepath, 'r') as f:
+def media(filepath="fixtures/media.json"):
+    with open(filepath, "r") as f:
         add_from_file(f, Medium)
 
 

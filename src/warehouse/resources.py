@@ -22,44 +22,71 @@ from warehouse import schemas
 from warehouse.app import db
 from warehouse.jwt import jwt_require_claim, jwt_required
 from warehouse.models import (
-    BiologicalEntity, BiologicalEntityType, Condition, Experiment, Medium, Namespace, Organism, Sample, Strain, Unit)
-from warehouse.utils import CRUD, constraint_check, filter_by_jwt_claims, get_condition_by_id, get_sample_by_id
+    BiologicalEntity,
+    BiologicalEntityType,
+    Condition,
+    Experiment,
+    Medium,
+    Namespace,
+    Organism,
+    Sample,
+    Strain,
+    Unit,
+)
+from warehouse.utils import (
+    CRUD,
+    constraint_check,
+    filter_by_jwt_claims,
+    get_condition_by_id,
+    get_sample_by_id,
+)
 
 
 def init_app(app):
     """Register API resources on the provided Flask application."""
+
     def register(path, resource, name):
         app.add_url_rule(path, view_func=resource.as_view(name))
         docs.register(resource, endpoint=name)
 
     docs = FlaskApiSpec(app)
-    register('/organisms', OrganismList, "OrganismList")
-    register('/organisms/<int:id>', Organisms, "Organisms")
-    register('/namespaces', NamespaceList, "NamespaceList")
-    register('/namespaces/<int:id>', Namespaces, "Namespaces")
-    register('/types', TypeList, "TypeList")
-    register('/types/<int:id>', Types, "Types")
-    register('/units', UnitList, "UnitList")
-    register('/units/<int:id>', Units, "Units")
-    register('/experiments', ExperimentList, "ExperimentList")
-    register('/experiments/<int:id>', Experiments, "Experiments")
-    register('/strains', StrainList, "StrainList")
-    register('/strains/<int:id>', Strains, "Strains")
-    register('/bioentities', BiologicalEntityList, "BiologicalEntityList")
-    register('/bioentities/<int:id>', BiologicalEntities, "BiologicalEntities")
-    register('/bioentities/compounds', Chemicals, "Chemicals")
-    register('/media', MediaList, "MediaList")
-    register('/media/<int:id>', Media, "Media")
-    register('/experiments/<int:experiment_id>/conditions', ExperimentConditionList, "ExperimentConditionList")
-    register('/conditions/<int:id>', Conditions, "Conditions")
-    register('/conditions/<int:condition_id>/data', ConditionDataList, "ConditionDataList")
-    register('/conditions/<int:condition_id>/samples', ConditionSampleList, "ConditionSampleList")
-    register('/samples/<int:id>', Samples, "Samples")
+    register("/organisms", OrganismList, "OrganismList")
+    register("/organisms/<int:id>", Organisms, "Organisms")
+    register("/namespaces", NamespaceList, "NamespaceList")
+    register("/namespaces/<int:id>", Namespaces, "Namespaces")
+    register("/types", TypeList, "TypeList")
+    register("/types/<int:id>", Types, "Types")
+    register("/units", UnitList, "UnitList")
+    register("/units/<int:id>", Units, "Units")
+    register("/experiments", ExperimentList, "ExperimentList")
+    register("/experiments/<int:id>", Experiments, "Experiments")
+    register("/strains", StrainList, "StrainList")
+    register("/strains/<int:id>", Strains, "Strains")
+    register("/bioentities", BiologicalEntityList, "BiologicalEntityList")
+    register("/bioentities/<int:id>", BiologicalEntities, "BiologicalEntities")
+    register("/bioentities/compounds", Chemicals, "Chemicals")
+    register("/media", MediaList, "MediaList")
+    register("/media/<int:id>", Media, "Media")
+    register(
+        "/experiments/<int:experiment_id>/conditions",
+        ExperimentConditionList,
+        "ExperimentConditionList",
+    )
+    register("/conditions/<int:id>", Conditions, "Conditions")
+    register(
+        "/conditions/<int:condition_id>/data", ConditionDataList, "ConditionDataList"
+    )
+    register(
+        "/conditions/<int:condition_id>/samples",
+        ConditionSampleList,
+        "ConditionSampleList",
+    )
+    register("/samples/<int:id>", Samples, "Samples")
 
 
 def crud_class_factory(model, schema, name, name_plural=None, check_permissions=None):
     if name_plural is None:
-        name_plural = name + 's'
+        name_plural = name + "s"
 
     class List(MethodResource):
         @marshal_with(schema(many=True), 200)
@@ -77,10 +104,9 @@ def crud_class_factory(model, schema, name, name_plural=None, check_permissions=
         @doc(f"Create a {name}")
         def post(self, **payload):
             # TODO: logically, jwt claim check should occur after check for project_id
-            if 'project_id' in payload:
-                jwt_require_claim(payload['project_id'], 'write')
+            if "project_id" in payload:
+                jwt_require_claim(payload["project_id"], "write")
             return CRUD.post(payload, model, check_permissions=check_permissions)
-
 
     class Item(MethodResource):
         @marshal_with(schema, 200)
@@ -96,7 +122,7 @@ def crud_class_factory(model, schema, name, name_plural=None, check_permissions=
         @doc(f"Delete the {name} by id")
         def delete(self, id):
             object_ = CRUD.get_by_id(model, id)
-            jwt_require_claim(object_.project_id, 'admin')
+            jwt_require_claim(object_.project_id, "admin")
             CRUD.delete(model, id)
 
         @jwt_required
@@ -108,35 +134,43 @@ def crud_class_factory(model, schema, name, name_plural=None, check_permissions=
         @doc(f"Update the {name} by id")
         def put(self, id, **payload):
             object_ = CRUD.get_by_id(model, id)
-            jwt_require_claim(object_.project_id, 'write')
+            jwt_require_claim(object_.project_id, "write")
             return CRUD.put(payload, model, id, check_permissions=check_permissions)
 
     return List, Item
 
 
-OrganismList, Organisms = crud_class_factory(Organism, schemas.Organism, 'organism')
-NamespaceList, Namespaces = crud_class_factory(Namespace, schemas.Namespace, 'namespace')
-TypeList, Types = crud_class_factory(BiologicalEntityType, schemas.BiologicalEntityType, 'biological entity type')
-UnitList, Units = crud_class_factory(Unit, schemas.Unit, 'unit')
-ExperimentList, Experiments = crud_class_factory(Experiment, schemas.Experiment, 'experiment')
+OrganismList, Organisms = crud_class_factory(Organism, schemas.Organism, "organism")
+NamespaceList, Namespaces = crud_class_factory(
+    Namespace, schemas.Namespace, "namespace"
+)
+TypeList, Types = crud_class_factory(
+    BiologicalEntityType, schemas.BiologicalEntityType, "biological entity type"
+)
+UnitList, Units = crud_class_factory(Unit, schemas.Unit, "unit")
+ExperimentList, Experiments = crud_class_factory(
+    Experiment, schemas.Experiment, "experiment"
+)
 StrainList, Strains = crud_class_factory(
     Strain,
     schemas.Strain,
-    'strain',
-    check_permissions={'parent_id': Strain, 'organism_id': Organism},
+    "strain",
+    check_permissions={"parent_id": Strain, "organism_id": Organism},
 )
 BiologicalEntityList, BiologicalEntities = crud_class_factory(
     BiologicalEntity,
     schemas.BiologicalEntity,
-    'biological entity',
-    'biological entities',
-    check_permissions={'namespace_id': Namespace, 'type_id': BiologicalEntityType},
+    "biological entity",
+    "biological entities",
+    check_permissions={"namespace_id": Namespace, "type_id": BiologicalEntityType},
 )
 
 
 # TODO: find out if the speed is an issue
 def query_compounds(query):
-    return query.join(BiologicalEntity.type).filter(BiologicalEntityType.name == 'compound')
+    return query.join(BiologicalEntity.type).filter(
+        BiologicalEntityType.name == "compound"
+    )
 
 
 class Chemicals(MethodResource):
@@ -160,10 +194,11 @@ def medium_with_mass_concentrations(medium):
 
 # TODO: make a copy if the compounds are from the different project
 def set_compounds_from_payload(data, medium):
-    compound_dict = {c['id']: c['mass_concentration'] for c in data['compounds']}
+    compound_dict = {c["id"]: c["mass_concentration"] for c in data["compounds"]}
     entities = query_compounds(filter_by_jwt_claims(BiologicalEntity)).filter(
-        BiologicalEntity.id.in_(compound_dict.keys()))
-    if entities.count() < len(data['compounds']):
+        BiologicalEntity.id.in_(compound_dict.keys())
+    )
+    if entities.count() < len(data["compounds"]):
         raise NotCompound
     medium.compounds = entities.all()
     db.session.add(medium)
@@ -191,12 +226,10 @@ class MediaList(MethodResource):
     @doc(description="Create one medium by defining the recipe")
     def post(self, **payload):
         # TODO: logically, jwt claim check should occur after check for project_id
-        if 'project_id' in payload:
-            jwt_require_claim(payload['project_id'], 'write')
+        if "project_id" in payload:
+            jwt_require_claim(payload["project_id"], "write")
         medium = Medium(
-            project_id=payload['project_id'],
-            name=payload['name'],
-            ph=payload['ph'],
+            project_id=payload["project_id"], name=payload["name"], ph=payload["ph"]
         )
         try:
             set_compounds_from_payload(payload, medium)
@@ -215,7 +248,7 @@ class Media(MethodResource):
     @doc(description="Delete the medium by id - compounds will not be deleted")
     def delete(self, id):
         medium = CRUD.get_by_id(Medium, id)
-        jwt_require_claim(medium.project_id, 'admin')
+        jwt_require_claim(medium.project_id, "admin")
         CRUD.delete(Medium, id)
 
     @jwt_required
@@ -225,7 +258,7 @@ class Media(MethodResource):
     @doc(description="Update the medium by id")
     def put(self, id, **payload):
         medium = CRUD.get_by_id(Medium, id)
-        jwt_require_claim(medium.project_id, 'write')
+        jwt_require_claim(medium.project_id, "write")
         try:
             set_compounds_from_payload(payload, medium)
         except NotCompound:
@@ -245,14 +278,19 @@ class ExperimentConditionList(MethodResource):
     @doc(description="Create one condition")
     def post(self, experiment_id, **payload):
         experiment = CRUD.get_by_id(Experiment, experiment_id)
-        jwt_require_claim(experiment.project_id, 'write')
-        payload['experiment_id'] = experiment_id
-        condition = CRUD.post(payload, Condition, check_permissions={
-            'strain_id': Strain,
-            'medium_id': Medium,
-            'feed_medium_id': Medium,
-            'experiment_id': Experiment
-        }, project_id=False)
+        jwt_require_claim(experiment.project_id, "write")
+        payload["experiment_id"] = experiment_id
+        condition = CRUD.post(
+            payload,
+            Condition,
+            check_permissions={
+                "strain_id": Strain,
+                "medium_id": Medium,
+                "feed_medium_id": Medium,
+                "experiment_id": Experiment,
+            },
+            project_id=False,
+        )
         return condition, 201
 
 
@@ -265,10 +303,13 @@ class Conditions(MethodResource):
 
     @jwt_required
     @marshal_with(None, 404)
-    @doc(description="Delete a condition by id - associated samples will be deleted as well")
+    @doc(
+        description="Delete a condition by id - associated samples will be deleted as "
+        "well"
+    )
     def delete(self, id):
         condition = get_condition_by_id(id)
-        jwt_require_claim(condition.experiment.project_id, 'admin')
+        jwt_require_claim(condition.experiment.project_id, "admin")
         db.session.delete(condition)
         constraint_check(db)
 
@@ -279,13 +320,17 @@ class Conditions(MethodResource):
     @doc(description="Update a condition by id")
     def put(self, id, **payload):
         condition = get_condition_by_id(id)
-        jwt_require_claim(condition.experiment.project_id, 'write')
-        CRUD.modify_object(payload, condition, check_permissions={
-            'strain_id': Strain,
-            'medium_id': Medium,
-            'feed_medium_id': Medium,
-            'experiment_id': Experiment,
-        })
+        jwt_require_claim(condition.experiment.project_id, "write")
+        CRUD.modify_object(
+            payload,
+            condition,
+            check_permissions={
+                "strain_id": Strain,
+                "medium_id": Medium,
+                "feed_medium_id": Medium,
+                "experiment_id": Experiment,
+            },
+        )
         db.session.merge(condition)
         constraint_check(db)
         return condition
@@ -306,11 +351,14 @@ class ConditionDataList(MethodResource):
                     return "bigg.reaction"
             return namespace
 
-        medium = [{
-            'id': compound.reference,
-            'name': compound.name,
-            'namespace': bigg_namespace(compound.namespace.name, "metabolite"),
-        } for compound in condition.medium.compounds]
+        medium = [
+            {
+                "id": compound.reference,
+                "name": compound.name,
+                "namespace": bigg_namespace(compound.namespace.name, "metabolite"),
+            }
+            for compound in condition.medium.compounds
+        ]
 
         def iterate(genotype, strain):
             # Wild type strains have empty strings in the genotype
@@ -319,38 +367,45 @@ class ConditionDataList(MethodResource):
             if strain.parent:
                 iterate(genotype, strain.parent[0])
             return genotype
+
         genotype = iterate([], condition.strain)
 
         growth_rate = None
         measurements = []
         for sample in condition.samples.all():
             if sample.is_growth_rate():
-                growth_rate = {
-                    'measurements': [sample.value],
-                }
+                growth_rate = {"measurements": [sample.value]}
             elif sample.is_fluxomics():
-                measurements.append({
-                    'id': sample.numerator.reference,
-                    'name': sample.numerator.name,
-                    'namespace': bigg_namespace(sample.numerator.namespace.name, "reaction"),
-                    'measurements': [sample.value],
-                    'type': sample.numerator.type.name,
-                })
+                measurements.append(
+                    {
+                        "id": sample.numerator.reference,
+                        "name": sample.numerator.name,
+                        "namespace": bigg_namespace(
+                            sample.numerator.namespace.name, "reaction"
+                        ),
+                        "measurements": [sample.value],
+                        "type": sample.numerator.type.name,
+                    }
+                )
             elif sample.is_metabolomics():
-                measurements.append({
-                    "id": sample.numerator.reference,
-                    "name": sample.numerator.name,
-                    "namespace": bigg_namespace(sample.numerator.namespace.name, "metabolite"),
-                    "measurements": [sample.value],
-                    "type": sample.numerator.type.name,
-                })
+                measurements.append(
+                    {
+                        "id": sample.numerator.reference,
+                        "name": sample.numerator.name,
+                        "namespace": bigg_namespace(
+                            sample.numerator.namespace.name, "metabolite"
+                        ),
+                        "measurements": [sample.value],
+                        "type": sample.numerator.type.name,
+                    }
+                )
             # TODO (Ali Kaafarani): include proteomics
 
         return {
-            'medium': medium,
-            'genotype': genotype,
-            'growth_rate': growth_rate,
-            'measurements': measurements,
+            "medium": medium,
+            "genotype": genotype,
+            "growth_rate": growth_rate,
+            "measurements": measurements,
         }
 
 
@@ -367,14 +422,19 @@ class ConditionSampleList(MethodResource):
     @doc(description="Create a sample for the condition")
     def post(self, condition_id, **payload):
         condition = get_condition_by_id(condition_id)
-        jwt_require_claim(condition.experiment.project_id, 'write')
-        payload['condition_id'] = condition_id
-        sample = CRUD.post(payload, Sample, check_permissions={
-            'numerator_id': BiologicalEntity,
-            'denominator_id': BiologicalEntity,
-            'unit_id': Unit,
-            'condition_id': Condition,
-        }, project_id=False)
+        jwt_require_claim(condition.experiment.project_id, "write")
+        payload["condition_id"] = condition_id
+        sample = CRUD.post(
+            payload,
+            Sample,
+            check_permissions={
+                "numerator_id": BiologicalEntity,
+                "denominator_id": BiologicalEntity,
+                "unit_id": Unit,
+                "condition_id": Condition,
+            },
+            project_id=False,
+        )
         return sample, 201
 
 
@@ -390,7 +450,7 @@ class Samples(MethodResource):
     @doc(description="Delete a sample by id")
     def delete(self, id):
         sample = get_sample_by_id(id)
-        jwt_require_claim(sample.condition.experiment.project_id, 'admin')
+        jwt_require_claim(sample.condition.experiment.project_id, "admin")
         db.session.delete(sample)
         constraint_check(db)
 
@@ -401,13 +461,17 @@ class Samples(MethodResource):
     @doc(description="Update a sample by id")
     def put(self, id, **payload):
         sample = get_sample_by_id(id)
-        jwt_require_claim(sample.condition.experiment.project_id, 'write')
-        CRUD.modify_object(payload, sample, check_permissions={
-            'numerator_id': BiologicalEntity,
-            'denominator_id': BiologicalEntity,
-            'unit_id': Unit,
-            'condition_id': Condition,
-        })
+        jwt_require_claim(sample.condition.experiment.project_id, "write")
+        CRUD.modify_object(
+            payload,
+            sample,
+            check_permissions={
+                "numerator_id": BiologicalEntity,
+                "denominator_id": BiologicalEntity,
+                "unit_id": Unit,
+                "condition_id": Condition,
+            },
+        )
         db.session.merge(sample)
         constraint_check(db)
         return sample

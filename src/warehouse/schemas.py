@@ -90,13 +90,15 @@ class Condition(StrictSchema):
     protocol = fields.String(allow_none=True)
     temperature = fields.Float(allow_none=True)
     aerobic = fields.Boolean(allow_none=True)
-    extra_data = fields.Raw(
-        title='User-defined Extra Data',
-        description='Field to allow users to add untyped metadata specific to '
-                    'each condition',
-        required=False,
-        example="{'Stirrer Speed' : '300RPM', 'PH' : '7.9'}"
-    ),
+    extra_data = (
+        fields.Raw(
+            title="User-defined Extra Data",
+            description="Field to allow users to add untyped metadata specific to "
+            "each condition",
+            required=False,
+            example="{'Stirrer Speed' : '300RPM', 'PH' : '7.9'}",
+        ),
+    )
     strain_id = fields.Integer(allow_none=True)
     medium_id = fields.Integer(allow_none=True)
     feed_medium_id = fields.Integer(allow_none=True)
@@ -130,11 +132,9 @@ class Measurement(Schema):
     # See https://www.ebi.ac.uk/miriam/main/collections
     namespace = fields.String(required=True)
     measurements = fields.List(fields.Float())
-    type = fields.String(required=True, validate=OneOf([
-        'compound',
-        'reaction',
-        'protein',
-    ]))
+    type = fields.String(
+        required=True, validate=OneOf(["compound", "reaction", "protein"])
+    )
 
 
 class GrowthRate(Schema):

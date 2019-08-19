@@ -36,19 +36,20 @@ app = Flask(__name__)
 app.config.from_object(current_settings())
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-admin = Admin(app, name='warehouse')
+admin = Admin(app, name="warehouse")
 basic_auth = BasicAuth(app)
 
 
 def init_app(application):
     """Initialize the main app with config information and routes."""
-    logging.config.dictConfig(application.config['LOGGING'])
+    logging.config.dictConfig(application.config["LOGGING"])
     application.wsgi_app = ProxyFix(application.wsgi_app)
 
     # Configure Sentry
-    if application.config['SENTRY_DSN']:
-        sentry = Sentry(dsn=application.config['SENTRY_DSN'], logging=True,
-                        level=logging.WARNING)
+    if application.config["SENTRY_DSN"]:
+        sentry = Sentry(
+            dsn=application.config["SENTRY_DSN"], logging=True, level=logging.WARNING
+        )
         sentry.init_app(application)
 
     # Add JWT middleware
@@ -59,16 +60,15 @@ def init_app(application):
 
     # Add routes and resources.
     from warehouse import resources, models, utils
+
     resources.init_app(application)
 
     class ProtectedModelView(ModelView):
         page_size = 1000
-        form_excluded_columns = ['created', 'updated']
+        form_excluded_columns = ["created", "updated"]
         can_export = True
         form_extra_fields = {
-            'file': form.FileUploadField(
-                'Bulk creation with a json file'
-            )
+            "file": form.FileUploadField("Bulk creation with a json file")
         }
 
         def create_model(self, form):

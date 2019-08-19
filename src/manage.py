@@ -19,5 +19,5 @@ from warehouse.commands import Fixtures
 from warehouse.app import app
 
 manager = Manager(app)
-manager.add_command('fixtures', Fixtures)
+manager.add_command("fixtures", Fixtures)
 manager.run()

@@ -36,35 +36,35 @@ def test_jwt_required_decorator(app):
 def test_jwt_require_claim(app):
     # Invalid access level
     with pytest.raises(ValueError):
-        jwt.jwt_require_claim(1, 'bogus')
+        jwt.jwt_require_claim(1, "bogus")
 
     # No write to public projects
-    g.jwt_claims = {'prj': {}}
+    g.jwt_claims = {"prj": {}}
     with pytest.raises(Forbidden):
-        jwt.jwt_require_claim(None, 'admin')
+        jwt.jwt_require_claim(None, "admin")
 
     # Insufficient access levels
-    g.jwt_claims = {'prj': {"1": 'read'}}
+    g.jwt_claims = {"prj": {"1": "read"}}
     with pytest.raises(Forbidden):
-        jwt.jwt_require_claim(1, 'write')
+        jwt.jwt_require_claim(1, "write")
     with pytest.raises(Forbidden):
-        jwt.jwt_require_claim(1, 'admin')
-    g.jwt_claims = {'prj': {"1": 'write'}}
+        jwt.jwt_require_claim(1, "admin")
+    g.jwt_claims = {"prj": {"1": "write"}}
     with pytest.raises(Forbidden):
-        jwt.jwt_require_claim(1, 'admin')
+        jwt.jwt_require_claim(1, "admin")
 
     # Sufficient access levels
-    g.jwt_claims = {'prj': {"1": 'read'}}
-    jwt.jwt_require_claim(1, 'read')
-    g.jwt_claims = {'prj': {"1": 'write'}}
-    jwt.jwt_require_claim(1, 'read')
-    jwt.jwt_require_claim(1, 'write')
-    g.jwt_claims = {'prj': {"1": 'admin'}}
-    jwt.jwt_require_claim(1, 'read')
-    jwt.jwt_require_claim(1, 'write')
-    jwt.jwt_require_claim(1, 'admin')
+    g.jwt_claims = {"prj": {"1": "read"}}
+    jwt.jwt_require_claim(1, "read")
+    g.jwt_claims = {"prj": {"1": "write"}}
+    jwt.jwt_require_claim(1, "read")
+    jwt.jwt_require_claim(1, "write")
+    g.jwt_claims = {"prj": {"1": "admin"}}
+    jwt.jwt_require_claim(1, "read")
+    jwt.jwt_require_claim(1, "write")
+    jwt.jwt_require_claim(1, "admin")
 
     # Missing access level
-    g.jwt_claims = {'prj': {"1": 'admin'}}
+    g.jwt_claims = {"prj": {"1": "admin"}}
     with pytest.raises(Forbidden):
-        jwt.jwt_require_claim(2, 'admin')
+        jwt.jwt_require_claim(2, "admin")
