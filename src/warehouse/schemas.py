@@ -117,7 +117,7 @@ class Sample(StrictSchema):
     unit_id = fields.Integer(allow_none=True)
 
 
-class MediumCompound(Schema):
+class MediumCompoundData(Schema):
     id = fields.String(required=True)
     name = fields.String(required=True)
     # Note: namespace should match a namespace identifier from miriam.
@@ -142,7 +142,7 @@ class GrowthRate(Schema):
 
 
 class ModelingData(Schema):
-    medium = fields.Nested(MediumCompound, many=True, missing=None)
+    medium = fields.Nested(MediumCompoundData, many=True, missing=None)
     genotype = fields.List(fields.String(), missing=None)
     growth_rate = fields.Nested(GrowthRate, missing=None)
     measurements = fields.Nested(Measurement, many=True, missing=None)
