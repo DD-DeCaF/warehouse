@@ -292,7 +292,7 @@ def test_condition(db, client, tokens_admin):
         resp = client.post('/experiments/{}/conditions'.format(experiment_id), data=json.dumps(condition_info),
                            headers=headers)
         if len(permissions) == 1 and permissions[0] == 'correct':
-            assert resp.status_code == 200
+            assert resp.status_code == 201
             new_condition = resp.get_json()
         else:
             assert resp.status_code == 404
@@ -339,7 +339,7 @@ def test_samples(db, client, tokens_admin):
                            data=json.dumps(sample_info),
                            headers=headers)
         if key == 'correct':
-            assert resp.status_code == 200
+            assert resp.status_code == 201
             obj = resp.get_json()
         else:
             assert resp.status_code == 404
