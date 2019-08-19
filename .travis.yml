@@ -23,6 +23,7 @@ install:
   - make databases
 
 script:
+  - docker-compose run --rm web black --check src tests
   - make test-travis
 
 before_deploy:

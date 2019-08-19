@@ -26,7 +26,7 @@ start:
 qa: test style
 
 ## Run all style related targets.
-style: flake8 isort license
+style: black flake8 isort license
 
 ## Run the tests.
 test:
@@ -53,6 +53,10 @@ databases:
 ## Install fixtures
 fixture:
 	docker-compose run --rm web ./src/manage.py fixtures populate
+
+## Run black.
+black:
+	docker-compose run --rm web black src/warehouse tests
 
 ## Run flake8.
 flake8:

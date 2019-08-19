@@ -1,6 +1,7 @@
 pytest
 pytest-cov
 codecov
+black
 flake8
 isort
 ipython
