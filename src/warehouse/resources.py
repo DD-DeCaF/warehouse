@@ -62,7 +62,7 @@ def crud_class_factory(model, schema, name, name_plural=None, check_permissions=
         name_plural = name + 's'
 
     class List(MethodResource):
-        @marshal_with(schema(many=True))
+        @marshal_with(schema(many=True), 200)
         @doc(f"List all the {name_plural}")
         def get(self):
             # Note: claims are not checked, the query will be filtered by read access
@@ -83,7 +83,7 @@ def crud_class_factory(model, schema, name, name_plural=None, check_permissions=
 
 
     class Item(MethodResource):
-        @marshal_with(schema)
+        @marshal_with(schema, 200)
         @doc(f"Get the {name} by id")
         def get(self, id):
             # Note: claims are not checked, the query will be filtered by read access
@@ -140,7 +140,7 @@ def query_compounds(query):
 
 
 class Chemicals(MethodResource):
-    @marshal_with(schemas.BiologicalEntity(many=True))
+    @marshal_with(schemas.BiologicalEntity(many=True), 200)
     @doc(description="List all the compounds")
     def get(self):
         # Note: claims are not checked, the query will be filtered by read access
@@ -174,7 +174,7 @@ def set_compounds_from_payload(data, medium):
 
 
 class MediaList(MethodResource):
-    @marshal_with(schemas.Medium(many=True))
+    @marshal_with(schemas.Medium(many=True), 200)
     @doc(description="List all the media and their recipes")
     def get(self):
         # Note: claims are not checked, the query will be filtered by read access
@@ -187,7 +187,7 @@ class MediaList(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.MediumSimple)
-    @marshal_with(schemas.Medium)
+    @marshal_with(schemas.Medium, 200)
     @doc(description="Create one medium by defining the recipe")
     def post(self, **payload):
         # TODO: logically, jwt claim check should occur after check for project_id
@@ -206,7 +206,7 @@ class MediaList(MethodResource):
 
 
 class Media(MethodResource):
-    @marshal_with(schemas.Medium)
+    @marshal_with(schemas.Medium, 200)
     @doc(description="Get the medium by id")
     def get(self, id):
         return medium_with_mass_concentrations(CRUD.get_by_id(Medium, id))
@@ -234,14 +234,14 @@ class Media(MethodResource):
 
 
 class ExperimentConditionList(MethodResource):
-    @marshal_with(schemas.Condition(many=True))
+    @marshal_with(schemas.Condition(many=True), 200)
     @doc(description="List all the conditions for the given experiment")
     def get(self, experiment_id):
         return CRUD.get_by_id(Experiment, experiment_id).conditions.all()
 
     @jwt_required
     @use_kwargs(schemas.Condition)
-    @marshal_with(schemas.Condition)
+    @marshal_with(schemas.Condition, 201)
     @doc(description="Create one condition")
     def post(self, experiment_id, **payload):
         experiment = CRUD.get_by_id(Experiment, experiment_id)
@@ -253,7 +253,7 @@ class ExperimentConditionList(MethodResource):
             'feed_medium_id': Medium,
             'experiment_id': Experiment
         }, project_id=False)
-        return condition
+        return condition, 201
 
 
 class Conditions(MethodResource):
@@ -292,7 +292,7 @@ class Conditions(MethodResource):
 
 
 class ConditionDataList(MethodResource):
-    @marshal_with(schemas.ModelingData())
+    @marshal_with(schemas.ModelingData(), 200)
     @doc(description="List modeling data for the given condition")
     def get(self, condition_id):
         condition = get_condition_by_id(condition_id)
@@ -355,7 +355,7 @@ class ConditionDataList(MethodResource):
 
 
 class ConditionSampleList(MethodResource):
-    @marshal_with(schemas.Sample(many=True))
+    @marshal_with(schemas.Sample(many=True), 200)
     @doc(description="List all the samples for the given condition")
     def get(self, condition_id):
         condition = get_condition_by_id(condition_id)
@@ -363,7 +363,7 @@ class ConditionSampleList(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.Sample)
-    @marshal_with(schemas.Sample)
+    @marshal_with(schemas.Sample, 201)
     @doc(description="Create a sample for the condition")
     def post(self, condition_id, **payload):
         condition = get_condition_by_id(condition_id)
@@ -375,7 +375,7 @@ class ConditionSampleList(MethodResource):
             'unit_id': Unit,
             'condition_id': Condition,
         }, project_id=False)
-        return sample
+        return sample, 201
 
 
 class Samples(MethodResource):
