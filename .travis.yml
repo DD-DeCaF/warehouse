@@ -24,6 +24,7 @@ install:
 
 script:
   - docker-compose run --rm web black --check src tests
+  - docker-compose run --rm web isort --check-only --recursive src tests
   - make test-travis
 
 before_deploy:
