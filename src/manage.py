@@ -15,8 +15,10 @@
 # limitations under the License.
 
 from flask_script import Manager
-from warehouse.commands import Fixtures
+
 from warehouse.app import app
+from warehouse.commands import Fixtures
+
 
 manager = Manager(app)
 manager.add_command("fixtures", Fixtures)
