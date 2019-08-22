@@ -23,170 +23,225 @@ class TimestampMixin(object):
 
 
 class Organism(TimestampMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer)
 
-    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
 
 
 class Strain(TimestampMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer)
 
-    id = db.Column(db.Integer, primary_key=True)
+    organism_id = db.Column(
+        db.Integer,
+        db.ForeignKey("organism.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    organism = db.relationship(Organism)
+
+    parent_id = db.Column(
+        db.Integer, db.ForeignKey("strain.id", onupdate="CASCADE", ondelete="CASCADE")
+    )
+    parent = db.relationship("Strain", uselist=False)
+
     name = db.Column(db.String(256), nullable=False)
-
-    parent_id = db.Column(db.Integer, db.ForeignKey("strain.id"))
-    parent = db.relationship("Strain")
-
     genotype = db.Column(db.Text())
 
-    organism_id = db.Column(db.Integer, db.ForeignKey("organism.id"), nullable=False)
-    organism = db.relationship(Organism)
+
+class Experiment(TimestampMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer)
+
+    name = db.Column(db.String(256), nullable=False)
+    description = db.Column(db.Text(), nullable=False)
 
 
 class Medium(TimestampMixin, db.Model):
     project_id = db.Column(db.Integer)
-
     id = db.Column(db.Integer, primary_key=True)
+
     name = db.Column(db.String(256), nullable=False)
-
-    ph = db.Column(db.Float, nullable=False)
-
-    compounds = db.relationship("BiologicalEntity", secondary="medium_compound")
-
-
-class Namespace(TimestampMixin, db.Model):
-    project_id = db.Column(db.Integer)
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(256), nullable=False)
-
-
-class BiologicalEntityType(TimestampMixin, db.Model):
-    project_id = db.Column(db.Integer)
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(256), nullable=False)
-
-
-class BiologicalEntity(TimestampMixin, db.Model):
-    project_id = db.Column(db.Integer)
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(2048), nullable=False)
-
-    namespace_id = db.Column(db.Integer, db.ForeignKey("namespace.id"), nullable=False)
-    namespace = db.relationship(Namespace)
-
-    reference = db.Column(db.String(256), nullable=False)
-
-    type_id = db.Column(
-        db.Integer, db.ForeignKey("biological_entity_type.id"), nullable=False
-    )
-    type = db.relationship(BiologicalEntityType)
 
 
 class MediumCompound(TimestampMixin, db.Model):
-    __table_args__ = (db.PrimaryKeyConstraint("medium_id", "compound_id"),)
+    id = db.Column(db.Integer, primary_key=True)
 
-    __mapper_args__ = {"confirm_deleted_rows": False}
-
-    medium_id = db.Column(db.Integer, db.ForeignKey("medium.id"))
-    compound_id = db.Column(db.Integer, db.ForeignKey("biological_entity.id"))
-    mass_concentration = db.Column(db.Float)
-
+    medium_id = db.Column(
+        db.Integer,
+        db.ForeignKey("medium.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
     medium = db.relationship(
         Medium,
-        backref=db.backref("composition", cascade="all, delete-orphan", lazy="dynamic"),
+        backref=db.backref("compounds", cascade="all, delete-orphan", lazy="dynamic"),
     )
-    compound = db.relationship(BiologicalEntity)
+
+    compound_name = db.Column(db.Text())
+    compound_identifier = db.Column(db.Text())
+    compound_namespace = db.Column(db.Text())
+    mass_concentration = db.Column(db.Float())  # unit: mmol/l
 
 
-class Unit(TimestampMixin, db.Model):
-    project_id = db.Column(db.Integer)
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(256), nullable=False)
-
-
-class Experiment(TimestampMixin, db.Model):
-    project_id = db.Column(db.Integer)
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(256), nullable=False)
-
-    description = db.Column(db.Text(), nullable=False)
-
-
-# TODO: tags
-# TODO: info to put to columns (protocol, temperature, gas etc)
 class Condition(TimestampMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
     experiment_id = db.Column(
-        db.Integer, db.ForeignKey("experiment.id"), nullable=False
+        db.Integer,
+        db.ForeignKey("experiment.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
     )
     experiment = db.relationship(
         Experiment,
         backref=db.backref("conditions", cascade="all, delete-orphan", lazy="dynamic"),
     )
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(256), nullable=False)
 
-    protocol = db.Column(db.String(256))
-    temperature = db.Column(db.Float, nullable=False)
-    aerobic = db.Column(db.Boolean, nullable=False)
-    extra_data = db.Column(db.JSON, nullable=True)
-
-    strain_id = db.Column(db.Integer, db.ForeignKey("strain.id"), nullable=False)
+    strain_id = db.Column(
+        db.Integer,
+        db.ForeignKey("strain.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
     strain = db.relationship(Strain)
 
-    medium_id = db.Column(db.Integer, db.ForeignKey("medium.id"), nullable=False)
+    medium_id = db.Column(
+        db.Integer,
+        db.ForeignKey("medium.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
     medium = db.relationship(Medium, foreign_keys=[medium_id])
 
-    feed_medium_id = db.Column(db.Integer, db.ForeignKey("medium.id"))
-    feed_medium = db.relationship(Medium, foreign_keys=[feed_medium_id])
+    name = db.Column(db.String(256), nullable=False)
 
 
 class Sample(TimestampMixin, db.Model):
-    condition_id = db.Column(db.Integer, db.ForeignKey("condition.id"), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+
+    condition_id = db.Column(
+        db.Integer,
+        db.ForeignKey("condition.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
     condition = db.relationship(
         Condition,
         backref=db.backref("samples", cascade="all, delete-orphan", lazy="dynamic"),
     )
 
+    # Datetime fields for when the sample was taken. `end_time` is optional, used for
+    # interval measurements like uptake rates or fluxomics.
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=True)
+
+
+class Fluxomics(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    datetime_start = db.Column(db.DateTime, nullable=False)
-    datetime_end = db.Column(db.DateTime)
+    sample_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sample.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sample = db.relationship(
+        Sample,
+        backref=db.backref("fluxomics", cascade="all, delete-orphan", lazy="dynamic"),
+    )
 
-    numerator_id = db.Column(db.Integer, db.ForeignKey("biological_entity.id"))
-    numerator = db.relationship(BiologicalEntity, foreign_keys=[numerator_id])
+    reaction_name = db.Column(db.Text(), nullable=False)
+    reaction_identifier = db.Column(db.Text(), nullable=False)
+    reaction_namespace = db.Column(db.Text(), nullable=False)
 
-    denominator_id = db.Column(db.Integer, db.ForeignKey("biological_entity.id"))
-    denominator = db.relationship(BiologicalEntity, foreign_keys=[denominator_id])
+    measurement = db.Column(db.Float, nullable=False)  # unit: mmol/gDW/h
+    uncertainty = db.Column(db.Float, nullable=True)  # unit: mmol/gDW/h
 
-    value = db.Column(db.Float, nullable=False)
 
-    unit_id = db.Column(db.Integer, db.ForeignKey("unit.id"), nullable=False)
-    unit = db.relationship(Unit)
+class Metabolomics(TimestampMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
 
-    def is_growth_rate(self):
-        return (
-            self.numerator is None
-            and self.denominator is None
-            and self.unit.name == "growth (1/h)"
-        )
+    sample_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sample.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sample = db.relationship(
+        Sample,
+        backref=db.backref(
+            "metabolomics", cascade="all, delete-orphan", lazy="dynamic"
+        ),
+    )
 
-    def is_fluxomics(self):
-        return (
-            self.numerator is not None
-            and self.numerator.type.name == "reaction"
-            and self.denominator is None
-        )
+    compound_name = db.Column(db.Text(), nullable=False)
+    compound_identifier = db.Column(db.Text(), nullable=False)
+    compound_namespace = db.Column(db.Text(), nullable=False)
 
-    def is_metabolomics(self):
-        return (
-            self.numerator is not None
-            and self.numerator.type.name == "compound"
-            and self.denominator is None
-            and self.unit.name == "compound / CDW (mmol/g/h)"
-        )
+    measurement = db.Column(db.Float, nullable=False)  # unit: mmol/l
+    uncertainty = db.Column(db.Float, nullable=True)  # unit: mmol/l
+
+
+class UptakeSecretionRates(TimestampMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    sample_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sample.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sample = db.relationship(
+        Sample,
+        backref=db.backref(
+            "uptake_secretion_rates", cascade="all, delete-orphan", lazy="dynamic"
+        ),
+    )
+
+    compound_name = db.Column(db.Text(), nullable=False)
+    compound_identifier = db.Column(db.Text(), nullable=False)
+    compound_namespace = db.Column(db.Text(), nullable=False)
+
+    measurement = db.Column(db.Float, nullable=False)  # unit: mmol/gDW/h
+    uncertainty = db.Column(db.Float, nullable=True)  # unit: mmol/gDW/h
+
+
+class MolarYields(TimestampMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    sample_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sample.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sample = db.relationship(
+        Sample,
+        backref=db.backref(
+            "molar_yields", cascade="all, delete-orphan", lazy="dynamic"
+        ),
+    )
+
+    product_name = db.Column(db.Text(), nullable=False)
+    product_identifier = db.Column(db.Text(), nullable=False)
+    product_namespace = db.Column(db.Text(), nullable=False)
+
+    substrate_name = db.Column(db.Text(), nullable=False)
+    substrate_identifier = db.Column(db.Text(), nullable=False)
+    substrate_namespace = db.Column(db.Text(), nullable=False)
+
+    # Both in mmol-product / mmol-substrate
+    measurement = db.Column(db.Float, nullable=False)
+    uncertainty = db.Column(db.Float, nullable=True)
+
+
+class Growth(TimestampMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    sample_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sample.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sample = db.relationship(
+        Sample,
+        backref=db.backref(
+            "growth_rate", uselist=False, cascade="all, delete-orphan", lazy="select"
+        ),
+    )
+
+    measurement = db.Column(db.Float, nullable=False)  # unit: 1/h
+    # unit: 1/h; 0 if no uncertainty or unknown
+    uncertainty = db.Column(db.Float, nullable=False)
