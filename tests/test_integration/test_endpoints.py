@@ -154,6 +154,11 @@ def test_crud_public_data(client, db, tokens_write, endpoint):
     response = client.delete(f"{endpoint}/{object_['id']}")
     assert response.status_code == 401
 
+    # Skip remaining test for the media endpoint which doesn't accept POST data in the
+    # same format as data is returned.
+    if endpoint == "/media":
+        return
+
     # Write operations are forbidden (403) with valid token
     headers = get_headers(tokens_write[0]["token"])
     # Not allowed to create public data
