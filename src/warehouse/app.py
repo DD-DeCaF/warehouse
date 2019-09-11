@@ -19,7 +19,7 @@ import logging
 import logging.config
 
 from flask import Flask, request
-from flask_admin import Admin, form
+from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_basicauth import BasicAuth
 from flask_cors import CORS
@@ -42,6 +42,8 @@ basic_auth = BasicAuth(app)
 
 def init_app(application):
     """Initialize the main app with config information and routes."""
+    from warehouse import models, resources
+
     logging.config.dictConfig(application.config["LOGGING"])
     application.wsgi_app = ProxyFix(application.wsgi_app)
 
@@ -58,44 +60,26 @@ def init_app(application):
     # Add custom error handlers
     errorhandlers.init_app(application)
 
-    # Add routes and resources.
-    from warehouse import resources, models, utils
-
+    # Add routes and resources
     resources.init_app(application)
 
-    class ProtectedModelView(ModelView):
-        page_size = 1000
-        form_excluded_columns = ["created", "updated"]
-        can_export = True
-        form_extra_fields = {
-            "file": form.FileUploadField("Bulk creation with a json file")
-        }
-
-        def create_model(self, form):
-            if form.file.data is not None:
-                utils.add_from_file(form.file.data, self.model)
-            else:
-                return super().create_model(form)
-            return True
-
+    # Add the flask-admin interface
     @application.before_request
     def restrict_admin():
         if request.path.startswith(admin.url) and not basic_auth.authenticate():
             return basic_auth.challenge()
-
-    for model in [
-        models.BiologicalEntity,
-        models.BiologicalEntityType,
-        models.Namespace,
-        models.Organism,
-        models.Medium,
-        models.Strain,
-        models.Unit,
-        models.Experiment,
-        models.Condition,
-        models.Sample,
-    ]:
-        admin.add_view(ProtectedModelView(model, db.session))
+    admin.add_view(ModelView(models.Organism, db.session))
+    admin.add_view(ModelView(models.Strain, db.session))
+    admin.add_view(ModelView(models.Experiment, db.session))
+    admin.add_view(ModelView(models.Medium, db.session))
+    admin.add_view(ModelView(models.MediumCompound, db.session))
+    admin.add_view(ModelView(models.Condition, db.session))
+    admin.add_view(ModelView(models.Sample, db.session))
+    admin.add_view(ModelView(models.Fluxomics, db.session))
+    admin.add_view(ModelView(models.Metabolomics, db.session))
+    admin.add_view(ModelView(models.UptakeSecretionRates, db.session))
+    admin.add_view(ModelView(models.MolarYields, db.session))
+    admin.add_view(ModelView(models.Growth, db.session))
 
     # Add CORS information for all resources.
     CORS(application)
