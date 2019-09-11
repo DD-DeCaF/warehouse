@@ -76,8 +76,7 @@ def session(reset_tables, connection):
     """
     flask_sqlalchemy_session = db_.session
     transaction = connection.begin()
-    db_.session = db_.create_scoped_session(
-        options={"bind": connection, "binds": {}})
+    db_.session = db_.create_scoped_session(options={"bind": connection, "binds": {}})
     yield db_.session
     db_.session.close()
     transaction.rollback()
@@ -89,29 +88,20 @@ def tokens(app):
     """Provide read, write and admin JWT claims to project 1."""
     return {
         "read": jwt.encode(
-            {"prj": {1: "read"}},
-            app.config["JWT_PRIVATE_KEY"],
-            "RS512",
+            {"prj": {1: "read"}}, app.config["JWT_PRIVATE_KEY"], "RS512"
         ),
         "write": jwt.encode(
-            {"prj": {1: "write"}},
-            app.config["JWT_PRIVATE_KEY"],
-            "RS512",
+            {"prj": {1: "write"}}, app.config["JWT_PRIVATE_KEY"], "RS512"
         ),
         "admin": jwt.encode(
-            {"prj": {1: "admin"}},
-            app.config["JWT_PRIVATE_KEY"],
-            "RS512",
+            {"prj": {1: "admin"}}, app.config["JWT_PRIVATE_KEY"], "RS512"
         ),
     }
 
 
 @pytest.fixture(scope="function")
 def data_fixtures(session):
-    organism = models.Organism(
-        project_id=1,
-        name="E. coli fixture",
-    )
+    organism = models.Organism(project_id=1, name="E. coli fixture")
     strain = models.Strain(
         project_id=1,
         name="Strain fixture",
@@ -120,16 +110,10 @@ def data_fixtures(session):
         genotype="Lorem ipsum",
     )
     experiment = models.Experiment(
-        project_id=1,
-        name="Experiment fixture",
-        description="Lorem ipsum",
+        project_id=1, name="Experiment fixture", description="Lorem ipsum"
     )
     session.add(organism)
     session.add(strain)
     session.add(experiment)
     session.commit()
-    return {
-        "organism": organism,
-        "strain": strain,
-        "experiment": experiment,
-    }
+    return {"organism": organism, "strain": strain, "experiment": experiment}

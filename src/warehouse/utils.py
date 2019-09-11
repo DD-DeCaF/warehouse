@@ -19,11 +19,13 @@ from sqlalchemy.orm.exc import NoResultFound
 
 def verify_relation(ModelClass, object_id):
     try:
-        return ModelClass.query.filter(
-            ModelClass.id == object_id,
-        ).filter(
-            ModelClass.project_id.in_(g.jwt_claims["prj"])
-            | ModelClass.project_id.is_(None)
-        ).one()
+        return (
+            ModelClass.query.filter(ModelClass.id == object_id)
+            .filter(
+                ModelClass.project_id.in_(g.jwt_claims["prj"])
+                | ModelClass.project_id.is_(None)
+            )
+            .one()
+        )
     except NoResultFound:
         abort(404, f"Related object {object_id} does not exist")

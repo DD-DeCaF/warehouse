@@ -17,7 +17,7 @@
 
 import warnings
 
-from flask import abort, make_response, g
+from flask import abort, g, make_response
 from flask_apispec import FlaskApiSpec, MethodResource, marshal_with, use_kwargs
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -227,9 +227,7 @@ class Experiments(MethodResource):
     def post(self, project_id, name, description):
         jwt_require_claim(project_id, "write")
         experiment = models.Experiment(
-            project_id=project_id,
-            name=name,
-            description=description,
+            project_id=project_id, name=name, description=description
         )
         db.session.add(experiment)
         db.session.commit()

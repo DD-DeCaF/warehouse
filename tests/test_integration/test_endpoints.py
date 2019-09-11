@@ -15,6 +15,7 @@
 
 """Test calling the API resource endpoints."""
 
+
 def test_docs(client):
     """Expect the OpenAPI docs to be served at root."""
     resp = client.get("/")

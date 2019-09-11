@@ -68,6 +68,7 @@ def init_app(application):
     def restrict_admin():
         if request.path.startswith(admin.url) and not basic_auth.authenticate():
             return basic_auth.challenge()
+
     admin.add_view(ModelView(models.Organism, db.session))
     admin.add_view(ModelView(models.Strain, db.session))
     admin.add_view(ModelView(models.Experiment, db.session))
