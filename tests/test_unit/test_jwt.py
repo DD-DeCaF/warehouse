@@ -20,7 +20,7 @@ from werkzeug.exceptions import Forbidden, Unauthorized
 from warehouse import jwt
 
 
-def test_jwt_required_decorator(app):
+def test_required_decorator(app):
     wrapper = jwt.jwt_required(lambda: None)
 
     # Valid JWT raises no exception
@@ -33,38 +33,41 @@ def test_jwt_required_decorator(app):
         wrapper()
 
 
-def test_jwt_require_claim(app):
-    # Invalid access level
+def test_invalid_access_level(app):
     with pytest.raises(ValueError):
         jwt.jwt_require_claim(1, "bogus")
 
-    # No write to public projects
+
+def test_no_write_public_project(app):
     g.jwt_claims = {"prj": {}}
     with pytest.raises(Forbidden):
         jwt.jwt_require_claim(None, "admin")
 
-    # Insufficient access levels
-    g.jwt_claims = {"prj": {"1": "read"}}
+
+def test_insufficient_access_level(app):
+    g.jwt_claims = {"prj": {1: "read"}}
     with pytest.raises(Forbidden):
         jwt.jwt_require_claim(1, "write")
     with pytest.raises(Forbidden):
         jwt.jwt_require_claim(1, "admin")
-    g.jwt_claims = {"prj": {"1": "write"}}
+    g.jwt_claims = {"prj": {1: "write"}}
     with pytest.raises(Forbidden):
         jwt.jwt_require_claim(1, "admin")
 
-    # Sufficient access levels
-    g.jwt_claims = {"prj": {"1": "read"}}
+
+def test_sufficient_access_level(app):
+    g.jwt_claims = {"prj": {1: "read"}}
     jwt.jwt_require_claim(1, "read")
-    g.jwt_claims = {"prj": {"1": "write"}}
+    g.jwt_claims = {"prj": {1: "write"}}
     jwt.jwt_require_claim(1, "read")
     jwt.jwt_require_claim(1, "write")
-    g.jwt_claims = {"prj": {"1": "admin"}}
+    g.jwt_claims = {"prj": {1: "admin"}}
     jwt.jwt_require_claim(1, "read")
     jwt.jwt_require_claim(1, "write")
     jwt.jwt_require_claim(1, "admin")
 
-    # Missing access level
-    g.jwt_claims = {"prj": {"1": "admin"}}
+
+def test_missing_access_level(app):
+    g.jwt_claims = {"prj": {1: "admin"}}
     with pytest.raises(Forbidden):
         jwt.jwt_require_claim(2, "admin")
