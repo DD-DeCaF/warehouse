@@ -19,7 +19,3 @@
 def test_mode(app):
     """Ensure that the app is in testing mode."""
     assert app.testing
-
-
-def test_strains(app):
-    pass

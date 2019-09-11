@@ -15,11 +15,13 @@
 
 import os
 
+import pytest
 import requests
 
 from warehouse.app import app
 
 
+@pytest.mark.skip(reason="Slow test; mock the IAM API before reenabling")
 def test_iam(monkeypatch, client):
     # Patch the app config with the current JWT public key from IAM
     response = requests.get(f"{os.environ['IAM_API']}/keys")

@@ -18,9 +18,9 @@
 import pytest
 from jose import jwt
 
+from warehouse import models
 from warehouse.app import app as app_
 from warehouse.app import init_app
-from warehouse.commands import populate
 from warehouse.models import db as db_
 
 
@@ -40,55 +40,96 @@ def client(app):
 
 
 @pytest.fixture(scope="session")
-def db(app):
-    """Provide a database session with tables created, populated with the default fixtures."""
-    db_.create_all()
-    populate()
-    yield db_
+def reset_tables(app):
+    """Ensure a clean database."""
+    # Clean up anything that might reside in the testing database.
     db_.session.remove()
     db_.drop_all()
+    # Re-create tables.
+    db_.create_all()
 
 
 @pytest.fixture(scope="session")
-def tokens_admin(app):
-    """Provides JWTs with admin claims to different projects"""
-    return [
-        {
-            "token": jwt.encode(
-                {"prj": claims}, app.config["JWT_PRIVATE_KEY"], "RS512"
-            ),
-            "claims": claims,
-            "projects": list(claims.keys()),
-        }
-        for claims in [{1: "admin", 2: "admin"}, {4: "admin"}]
-    ]
+def connection():
+    """
+    Use a connection such that transactions can be used.
+
+    Notes
+    -----
+    Follows a transaction pattern described in the following:
+    http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#session-begin-nested
+
+    """
+    with db_.engine.connect() as connection:
+        yield connection
+
+
+@pytest.fixture(scope="function")
+def session(reset_tables, connection):
+    """
+    Create a transaction and session per test unit.
+
+    Rolling back a transaction removes even committed rows
+    (``session.commit``) from the database.
+
+    https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#joining-a-session-into-an-external-transaction-such-as-for-test-suites
+    """
+    flask_sqlalchemy_session = db_.session
+    transaction = connection.begin()
+    db_.session = db_.create_scoped_session(
+        options={"bind": connection, "binds": {}})
+    yield db_.session
+    db_.session.close()
+    transaction.rollback()
+    db_.session = flask_sqlalchemy_session
 
 
 @pytest.fixture(scope="session")
-def tokens_write(app):
-    """Provides JWTs with write claims to different projects"""
-    return [
-        {
-            "token": jwt.encode(
-                {"prj": claims}, app.config["JWT_PRIVATE_KEY"], "RS512"
-            ),
-            "claims": claims,
-            "projects": list(claims.keys()),
-        }
-        for claims in [{1: "write", 2: "write"}, {4: "write"}]
-    ]
+def tokens(app):
+    """Provide read, write and admin JWT claims to project 1."""
+    return {
+        "read": jwt.encode(
+            {"prj": {1: "read"}},
+            app.config["JWT_PRIVATE_KEY"],
+            "RS512",
+        ),
+        "write": jwt.encode(
+            {"prj": {1: "write"}},
+            app.config["JWT_PRIVATE_KEY"],
+            "RS512",
+        ),
+        "admin": jwt.encode(
+            {"prj": {1: "admin"}},
+            app.config["JWT_PRIVATE_KEY"],
+            "RS512",
+        ),
+    }
 
 
-@pytest.fixture(scope="session")
-def tokens_read(app):
-    """Provides JWTs with read claims to different projects"""
-    return [
-        {
-            "token": jwt.encode(
-                {"prj": claims}, app.config["JWT_PRIVATE_KEY"], "RS512"
-            ),
-            "claims": claims,
-            "projects": list(claims.keys()),
-        }
-        for claims in [{1: "read", 2: "read"}, {4: "read"}]
-    ]
+@pytest.fixture(scope="function")
+def data_fixtures(session):
+    organism = models.Organism(
+        project_id=1,
+        name="E. coli fixture",
+    )
+    strain = models.Strain(
+        project_id=1,
+        name="Strain fixture",
+        organism=organism,
+        parent=None,
+        genotype="Lorem ipsum",
+    )
+    experiment = models.Experiment(
+        project_id=1,
+        name="Experiment fixture",
+        description="Lorem ipsum",
+    )
+    session.add(organism)
+    session.add(strain)
+    session.add(experiment)
+    session.commit()
+    return {
+        "organism": organism,
+        "strain": strain,
+        "experiment": experiment,
+    }
