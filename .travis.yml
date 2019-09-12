@@ -23,12 +23,14 @@ install:
   - make databases
 
 script:
+  - docker-compose run --rm web flake8 src tests
   - docker-compose run --rm web black --check src tests
   - docker-compose run --rm web isort --check-only --recursive src tests
   - # Run the tests and report coverage (see https://docs.codecov.io/docs/testing-with-docker).
   - mkdir --parents /tmp/coverage
   - docker-compose run --rm -e ENVIRONMENT=testing -v "/tmp/coverage:/tmp/coverage" web pytest --cov-report "xml:/tmp/coverage/coverage.xml" --cov-report term --cov=src/warehouse
   - bash <(curl -s https://codecov.io/bash) -f "/tmp/coverage/coverage.xml"
+  - ./scripts/verify_license_headers.sh src tests
 
 before_deploy:
   - ./scripts/install_gcloud.sh
