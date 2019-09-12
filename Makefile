@@ -41,10 +41,6 @@ databases:
 	docker-compose run --rm web flask db upgrade
 	docker-compose stop
 
-## Install fixtures
-fixture:
-	docker-compose run --rm web ./src/manage.py fixtures populate
-
 ## Run black.
 black:
 	docker-compose run --rm web black src/warehouse tests

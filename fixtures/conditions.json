@@ -1,4 +1,0 @@
-{"experiment_id": 2, "name": "public condition", "protocol": "some protocol", "temperature": 38.5, "aerobic": true, "strain_id": 1, "medium_id": 1}
-{"experiment_id": 2, "name": "another public condition", "protocol": "different protocol", "temperature": 15, "aerobic": false, "strain_id": 1, "medium_id": 1}
-{"experiment_id": 1, "name": "fluxomics condition", "protocol": "protocol1", "temperature": 20.11, "aerobic": false, "strain_id": 1, "medium_id": 3, "feed_medium_id": 1}
-{"experiment_id": 3, "name": "condition", "protocol": "protocol3", "temperature": 11, "aerobic": true, "strain_id": 3, "medium_id": 2, "extra_data" : {"some_key": "some_value"}}

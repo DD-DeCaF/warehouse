@@ -5,8 +5,6 @@ flask-basicauth
 flask-admin
 flask-sqlalchemy
 Flask-Migrate
-Flask-Fixtures
-Flask-Script
 psycopg2
 gunicorn
 requests

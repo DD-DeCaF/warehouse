@@ -28,11 +28,6 @@ To run the database migrations for the clean database:
 make upgrade
 ```
 
-To fill the database with data defined in `fixtures` directory:
-```
-make fixture
-```
-
 To test locally (will only work correctly if all the commands above are executed):
 ```
 make test
