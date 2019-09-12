@@ -21,9 +21,6 @@ class Organism(Schema):
     project_id = fields.Integer()
     name = fields.String()
 
-    class Meta:
-        strict = True
-
 
 class Strain(Schema):
     id = fields.Integer()
@@ -33,9 +30,6 @@ class Strain(Schema):
     genotype = fields.String()
     organism_id = fields.Integer()
 
-    class Meta:
-        strict = True
-
 
 class Experiment(Schema):
     id = fields.Integer()
@@ -43,17 +37,11 @@ class Experiment(Schema):
     name = fields.String()
     description = fields.String()
 
-    class Meta:
-        strict = True
-
 
 class Medium(Schema):
     id = fields.Integer()
     project_id = fields.Integer()
     name = fields.String()
-
-    class Meta:
-        strict = True
 
 
 class MediumCompound(Schema):
@@ -64,9 +52,6 @@ class MediumCompound(Schema):
     compound_namespace = fields.String()
     mass_concentration = fields.Float(allow_none=True)  # unit: mmol/l
 
-    class Meta:
-        strict = True
-
 
 class Condition(Schema):
     id = fields.Integer()
@@ -75,18 +60,12 @@ class Condition(Schema):
     medium_id = fields.Integer()
     name = fields.String()
 
-    class Meta:
-        strict = True
-
 
 class Sample(Schema):
     id = fields.Integer()
     condition_id = fields.Integer()
     start_time = fields.DateTime()
     end_time = fields.DateTime(allow_none=True)
-
-    class Meta:
-        strict = True
 
 
 class Fluxomics(Schema):
@@ -157,6 +136,3 @@ class ConditionData(Schema):
     medium = fields.Nested(NestedMedium)
     name = fields.String()
     samples = fields.Nested(Sample)
-
-    class Meta:
-        strict = True
