@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-PATTERN="Copyright 2018 Novo Nordisk Foundation Center for Biosustainability, DTU."
+PATTERN="Novo Nordisk Foundation Center for Biosustainability"
 RET=0
 for file in $(find $@ -name '*.py')
 do
