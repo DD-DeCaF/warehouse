@@ -14,7 +14,6 @@
 # limitations under the License.
 
 from marshmallow import Schema, fields
-from marshmallow.validate import OneOf
 
 
 class Organism(Schema):

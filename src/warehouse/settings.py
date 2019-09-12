@@ -110,8 +110,8 @@ class Testing(Default):
             "alg": "RS512",
             "e": "AQAB",
             "kty": "RSA",
-            "n": "32FY2NFy0yXKMp9aFP8E_oF_4czX2dvrJmOxyG_5OepdHVauoiE0WCMI7jzm7uYxF98CZNlMXxE0FKqVPchYBydbqMj-L4GxZqMbgUJ19c4HHLNARN1bTlqaQpRZxY_Fsk_xylNRYIgM5QY0lflguPrAY4uOQhriySJSz-tqs_gwdcTZwPZj80v4qE7ZSw0E-ZPP8Cfbmh6uvuM659c18NIl9o6brOTw9BcHmpCEK4JSS759LpEPZtUd5jmx5IqLwSKuaQJ0_XXjz4PTKinBrWbTyiaAkL30fKpYAn4sztQbyzMqZFe0rec_SlUUkUkwgrbTPpFSnb4dJO3DvVpwYw",
-        }  # noqa
+            "n": "32FY2NFy0yXKMp9aFP8E_oF_4czX2dvrJmOxyG_5OepdHVauoiE0WCMI7jzm7uYxF98CZNlMXxE0FKqVPchYBydbqMj-L4GxZqMbgUJ19c4HHLNARN1bTlqaQpRZxY_Fsk_xylNRYIgM5QY0lflguPrAY4uOQhriySJSz-tqs_gwdcTZwPZj80v4qE7ZSw0E-ZPP8Cfbmh6uvuM659c18NIl9o6brOTw9BcHmpCEK4JSS759LpEPZtUd5jmx5IqLwSKuaQJ0_XXjz4PTKinBrWbTyiaAkL30fKpYAn4sztQbyzMqZFe0rec_SlUUkUkwgrbTPpFSnb4dJO3DvVpwYw",  # noqa
+        }
 
 
 class Production(Default):
