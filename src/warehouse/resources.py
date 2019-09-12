@@ -43,6 +43,25 @@ def init_app(app):
     register("/strains/<int:id>", Strain)
     register("/experiments", Experiments)
     register("/experiments/<int:id>", Experiment)
+    register("/media", Media)
+    register("/media/<int:id>", Medium)
+    register("/media/compounds", MediumCompounds)
+    register("/media/compounds/<int:id>", MediumCompound)
+    register("/conditions", Conditions)
+    register("/conditions/<int:id>", Condition)
+    register("/conditions/<int:id>/data", ConditionData)
+    register("/samples", Samples)
+    register("/samples/<int:id>", Sample)
+    register("/fluxomics", Fluxomics)
+    register("/fluxomics/<int:id>", Fluxomic)
+    register("/metabolomics", Metabolomics)
+    register("/metabolomics/<int:id>", Metabolomic)
+    register("/uptake-secretion-rates", UptakeSecretionRates)
+    register("/uptake-secretion-rates/<int:id>", UptakeSecretionRate)
+    register("/molar-yields", MolarYields)
+    register("/molar-yields/<int:id>", MolarYield)
+    register("/growth-rates", GrowthRates)
+    register("/growth-rates/<int:id>", GrowthRate)
 
 
 class Organisms(MethodResource):
@@ -108,10 +127,7 @@ class Organism(MethodResource):
         try:
             organism = (
                 models.Organism.query.filter(models.Organism.id == id)
-                .filter(
-                    models.Organism.project_id.in_(g.jwt_claims["prj"])
-                    | models.Organism.project_id.is_(None)
-                )
+                .filter(models.Organism.project_id.in_(g.jwt_claims["prj"]))
                 .one()
             )
         except NoResultFound:
@@ -198,10 +214,7 @@ class Strain(MethodResource):
         try:
             strain = (
                 models.Strain.query.filter(models.Strain.id == id)
-                .filter(
-                    models.Strain.project_id.in_(g.jwt_claims["prj"])
-                    | models.Strain.project_id.is_(None)
-                )
+                .filter(models.Strain.project_id.in_(g.jwt_claims["prj"]))
                 .one()
             )
         except NoResultFound:
@@ -278,10 +291,7 @@ class Experiment(MethodResource):
         try:
             experiment = (
                 models.Experiment.query.filter(models.Experiment.id == id)
-                .filter(
-                    models.Experiment.project_id.in_(g.jwt_claims["prj"])
-                    | models.Experiment.project_id.is_(None)
-                )
+                .filter(models.Experiment.project_id.in_(g.jwt_claims["prj"]))
                 .one()
             )
         except NoResultFound:
@@ -289,5 +299,1047 @@ class Experiment(MethodResource):
         else:
             jwt_require_claim(experiment.project_id, "admin")
             db.session.delete(experiment)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class Media(MethodResource):
+    @marshal_with(schemas.Medium(many=True), 200)
+    def get(self):
+        return models.Medium.query.filter(
+            models.Medium.project_id.in_(g.jwt_claims["prj"])
+            | models.Medium.project_id.is_(None)
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.Medium(exclude=("id",)))
+    @marshal_with(schemas.Medium(only=("id",)), 201)
+    def post(self, project_id, name):
+        jwt_require_claim(project_id, "write")
+        medium = models.Medium(project_id=project_id, name=name)
+        db.session.add(medium)
+        db.session.commit()
+        return (medium, 201)
+
+
+class Medium(MethodResource):
+    @marshal_with(schemas.Medium, 200)
+    def get(self, id):
+        try:
+            return (
+                models.Medium.query.filter(models.Medium.id == id)
+                .filter(
+                    models.Medium.project_id.in_(g.jwt_claims["prj"])
+                    | models.Medium.project_id.is_(None)
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.Medium(exclude=("id",)))
+    @marshal_with(schemas.Medium(only=("id",), partial=True), 204)
+    def put(self, id, **payload):
+        try:
+            medium = (
+                models.Medium.query.filter(models.Medium.id == id)
+                .filter(models.Medium.project_id.in_(g.jwt_claims["prj"]))
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(medium.project_id, "write")
+            # If modifying the project id, make sure the user has write permissions to
+            # the new project too.
+            if "project_id" in payload:
+                jwt_require_claim(payload["project_id"], "write")
+            for field, value in payload.items():
+                setattr(medium, field, value)
+            db.session.add(medium)
+            db.session.commit()
+            return (medium, 204)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            medium = (
+                models.Medium.query.filter(models.Medium.id == id)
+                .filter(models.Medium.project_id.in_(g.jwt_claims["prj"]))
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(medium.project_id, "admin")
+            db.session.delete(medium)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class MediumCompounds(MethodResource):
+    @marshal_with(schemas.MediumCompound(many=True), 200)
+    def get(self):
+        return models.MediumCompound.query.filter(
+            models.MediumCompound.medium.has(
+                models.Medium.project_id.in_(g.jwt_claims["prj"])
+            )
+            | models.MediumCompound.medium.has(models.Medium.project_id.is_(None))
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.MediumCompound(exclude=("id",)))
+    @marshal_with(schemas.MediumCompound(only=("id",)), 201)
+    def post(
+        self,
+        medium_id,
+        compound_name,
+        compound_identifier,
+        compound_namespace,
+        mass_concentration,
+    ):
+        medium = verify_relation(models.Medium, medium_id)
+        jwt_require_claim(medium.project_id, "write")
+        medium_compound = models.MediumCompound(
+            medium_id=medium_id,
+            compound_name=compound_name,
+            compound_identifier=compound_identifier,
+            compound_namespace=compound_namespace,
+            mass_concentration=mass_concentration,
+        )
+        db.session.add(medium_compound)
+        db.session.commit()
+        return (medium_compound, 201)
+
+
+class MediumCompound(MethodResource):
+    @marshal_with(schemas.MediumCompound, 200)
+    def get(self, id):
+        try:
+            return (
+                models.MediumCompound.query.filter(models.MediumCompound.id == id)
+                .filter(
+                    models.MediumCompound.medium.has(
+                        models.Medium.project_id.in_(g.jwt_claims["prj"])
+                    )
+                    | models.MediumCompound.medium.has(
+                        models.Medium.project_id.is_(None)
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.MediumCompound(exclude=("id",)))
+    @marshal_with(schemas.MediumCompound(only=("id",), partial=True), 204)
+    def put(self, id, **payload):
+        try:
+            medium_compound = (
+                models.MediumCompound.query.filter(models.MediumCompound.id == id)
+                .filter(
+                    models.MediumCompound.medium.has(
+                        models.Medium.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(medium_compound.medium.project_id, "write")
+            for field, value in payload.items():
+                setattr(medium_compound, field, value)
+            db.session.add(medium_compound)
+            db.session.commit()
+            return (medium_compound, 204)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            medium_compound = (
+                models.MediumCompound.query.filter(models.MediumCompound.id == id)
+                .filter(
+                    models.MediumCompound.medium.has(
+                        models.Medium.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(medium_compound.medium.project_id, "admin")
+            db.session.delete(medium_compound)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class Conditions(MethodResource):
+    @marshal_with(schemas.Condition(many=True), 200)
+    def get(self):
+        return models.Condition.query.filter(
+            models.Condition.experiment.has(
+                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+            )
+            | models.Condition.experiment.has(models.Experiment.project_id.is_(None))
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.Condition(exclude=("id",)))
+    @marshal_with(schemas.Condition(only=("id",)), 201)
+    def post(self, experiment_id, strain_id, medium_id, name):
+        experiment = verify_relation(models.Experiment, experiment_id)
+        strain = verify_relation(models.Strain, strain_id)
+        medium = verify_relation(models.Medium, medium_id)
+        jwt_require_claim(experiment.project_id, "write")
+        condition = models.Condition(
+            experiment=experiment, strain=strain, medium=medium, name=name
+        )
+        db.session.add(condition)
+        db.session.commit()
+        return (condition, 201)
+
+
+class Condition(MethodResource):
+    @marshal_with(schemas.Condition, 200)
+    def get(self, id):
+        try:
+            return (
+                models.Condition.query.filter(models.Condition.id == id)
+                .filter(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                    | models.Condition.experiment.has(
+                        models.Experiment.project_id.is_(None)
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.Condition(exclude=("id",)))
+    @marshal_with(schemas.Condition(only=("id",), partial=True), 204)
+    def put(self, id, **payload):
+        try:
+            condition = (
+                models.Condition.query.filter(models.Condition.id == id)
+                .filter(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(condition.experiment.project_id, "write")
+            for field, value in payload.items():
+                setattr(condition, field, value)
+            db.session.add(condition)
+            db.session.commit()
+            return (condition, 204)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            condition = (
+                models.Condition.query.filter(models.Condition.id == id)
+                .filter(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(condition.experiment.project_id, "admin")
+            db.session.delete(condition)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class Samples(MethodResource):
+    @marshal_with(schemas.Sample(many=True), 200)
+    def get(self):
+        return models.Sample.query.filter(
+            models.Sample.condition.has(
+                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+            )
+            | models.Sample.condition.has(models.Experiment.project_id.is_(None))
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.Sample(exclude=("id",)))
+    @marshal_with(schemas.Sample(only=("id",)), 201)
+    def post(self, condition_id, start_time, end_time):
+        try:
+            condition = models.Condition.query.filter(
+                models.Condition.id == condition_id
+            ).one()
+            jwt_require_claim(condition.experiment.project_id, "write")
+        except NoResultFound:
+            abort(404, f"Related object {condition_id} does not exist")
+        sample = models.Sample(
+            condition=condition, start_time=start_time, end_time=end_time
+        )
+        db.session.add(sample)
+        db.session.commit()
+        return (sample, 201)
+
+
+class ConditionData(MethodResource):
+    @marshal_with(schemas.ConditionData())
+    def get(self, id):
+        try:
+            return (
+                models.Condition.query.filter(models.Condition.id == id)
+                .filter(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                    | models.Condition.experiment.has(
+                        models.Experiment.project_id.is_(None)
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+
+class Sample(MethodResource):
+    @marshal_with(schemas.Sample, 200)
+    def get(self, id):
+        try:
+            return (
+                models.Sample.query.filter(models.Sample.id == id)
+                .filter(
+                    models.Sample.condition.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                    | models.Sample.condition.has(
+                        models.Experiment.project_id.is_(None)
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.Sample(exclude=("id",)))
+    @marshal_with(schemas.Sample(only=("id",), partial=True), 204)
+    def put(self, id, **payload):
+        try:
+            sample = (
+                models.Sample.query.filter(models.Sample.id == id)
+                .filter(
+                    models.Sample.condition.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+            for field, value in payload.items():
+                setattr(sample, field, value)
+            db.session.add(sample)
+            db.session.commit()
+            return (sample, 204)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            sample = (
+                models.Sample.query.filter(models.Sample.id == id)
+                .filter(
+                    models.Sample.condition.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(sample.condition.experiment.project_id, "admin")
+            db.session.delete(sample)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class Fluxomics(MethodResource):
+    @marshal_with(schemas.Fluxomics(many=True), 200)
+    def get(self):
+        return models.Fluxomics.query.filter(
+            models.Fluxomics.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+            )
+            | models.Fluxomics.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.is_(None)
+                    )
+                )
+            )
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.Fluxomics(exclude=("id",)))
+    @marshal_with(schemas.Fluxomics(only=("id",)), 201)
+    def post(
+        self,
+        sample_id,
+        reaction_name,
+        reaction_identifier,
+        reaction_namespace,
+        measurement,
+        uncertainty,
+    ):
+        try:
+            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+        except NoResultFound:
+            abort(404, f"Related object {sample_id} does not exist")
+        fluxomics = models.Fluxomics(
+            sample=sample,
+            reaction_name=reaction_name,
+            reaction_identifier=reaction_identifier,
+            reaction_namespace=reaction_namespace,
+            measurement=measurement,
+            uncertainty=uncertainty,
+        )
+        db.session.add(fluxomics)
+        db.session.commit()
+        return (fluxomics, 201)
+
+
+class Fluxomic(MethodResource):
+    @marshal_with(schemas.Fluxomics, 200)
+    def get(self, id):
+        try:
+            return (
+                models.Fluxomics.query.filter(models.Fluxomics.id == id)
+                .filter(
+                    models.Fluxomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                    | models.Fluxomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.is_(None)
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.Fluxomics(exclude=("id",)))
+    @marshal_with(schemas.Fluxomics(only=("id",), partial=True), 204)
+    def put(self, id, **payload):
+        try:
+            fluxomics = (
+                models.Fluxomics.query.filter(models.Fluxomics.id == id)
+                .filter(
+                    models.Fluxomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(fluxomics.sample.condition.experiment.project_id, "write")
+            for field, value in payload.items():
+                setattr(fluxomics, field, value)
+            db.session.add(fluxomics)
+            db.session.commit()
+            return (fluxomics, 204)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            fluxomics = (
+                models.Fluxomics.query.filter(models.Fluxomics.id == id)
+                .filter(
+                    models.Fluxomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(fluxomics.sample.condition.experiment.project_id, "admin")
+            db.session.delete(fluxomics)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class Metabolomics(MethodResource):
+    @marshal_with(schemas.Metabolomics(many=True), 200)
+    def get(self):
+        return models.Metabolomics.query.filter(
+            models.Metabolomics.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+            )
+            | models.Metabolomics.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.is_(None)
+                    )
+                )
+            )
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.Metabolomics(exclude=("id",)))
+    @marshal_with(schemas.Metabolomics(only=("id",)), 201)
+    def post(
+        self,
+        sample_id,
+        compound_name,
+        compound_identifier,
+        compound_namespace,
+        measurement,
+        uncertainty,
+    ):
+        try:
+            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+        except NoResultFound:
+            abort(404, f"Related object {sample_id} does not exist")
+        metabolomics = models.Metabolomics(
+            sample=sample,
+            compound_name=compound_name,
+            compound_identifier=compound_identifier,
+            compound_namespace=compound_namespace,
+            measurement=measurement,
+            uncertainty=uncertainty,
+        )
+        db.session.add(metabolomics)
+        db.session.commit()
+        return (metabolomics, 201)
+
+
+class Metabolomic(MethodResource):
+    @marshal_with(schemas.Metabolomics, 200)
+    def get(self, id):
+        try:
+            return (
+                models.Metabolomics.query.filter(models.Metabolomics.id == id)
+                .filter(
+                    models.Metabolomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                    | models.Metabolomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.is_(None)
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.Metabolomics(exclude=("id",)))
+    @marshal_with(schemas.Metabolomics(only=("id",), partial=True), 204)
+    def put(self, id, **payload):
+        try:
+            metabolomics = (
+                models.Metabolomics.query.filter(models.Metabolomics.id == id)
+                .filter(
+                    models.Metabolomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                metabolomics.sample.condition.experiment.project_id, "write"
+            )
+            for field, value in payload.items():
+                setattr(metabolomics, field, value)
+            db.session.add(metabolomics)
+            db.session.commit()
+            return (metabolomics, 204)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            metabolomics = (
+                models.Metabolomics.query.filter(models.Metabolomics.id == id)
+                .filter(
+                    models.Metabolomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                metabolomics.sample.condition.experiment.project_id, "admin"
+            )
+            db.session.delete(metabolomics)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class UptakeSecretionRates(MethodResource):
+    @marshal_with(schemas.UptakeSecretionRates(many=True), 200)
+    def get(self):
+        return models.UptakeSecretionRates.query.filter(
+            models.UptakeSecretionRates.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+            )
+            | models.UptakeSecretionRates.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.is_(None)
+                    )
+                )
+            )
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.UptakeSecretionRates(exclude=("id",)))
+    @marshal_with(schemas.UptakeSecretionRates(only=("id",)), 201)
+    def post(
+        self,
+        sample_id,
+        compound_name,
+        compound_identifier,
+        compound_namespace,
+        measurement,
+        uncertainty,
+    ):
+        try:
+            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+        except NoResultFound:
+            abort(404, f"Related object {sample_id} does not exist")
+        uptake_secretion_rate = models.UptakeSecretionRates(
+            sample=sample,
+            compound_name=compound_name,
+            compound_identifier=compound_identifier,
+            compound_namespace=compound_namespace,
+            measurement=measurement,
+            uncertainty=uncertainty,
+        )
+        db.session.add(uptake_secretion_rate)
+        db.session.commit()
+        return (uptake_secretion_rate, 201)
+
+
+class UptakeSecretionRate(MethodResource):
+    @marshal_with(schemas.UptakeSecretionRates, 200)
+    def get(self, id):
+        try:
+            return (
+                models.UptakeSecretionRates.query.filter(
+                    models.UptakeSecretionRates.id == id
+                )
+                .filter(
+                    models.UptakeSecretionRates.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                    | models.UptakeSecretionRates.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.is_(None)
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.UptakeSecretionRates(exclude=("id",)))
+    @marshal_with(schemas.UptakeSecretionRates(only=("id",), partial=True), 204)
+    def put(self, id, **payload):
+        try:
+            uptake_secretion_rate = (
+                models.UptakeSecretionRates.query.filter(
+                    models.UptakeSecretionRates.id == id
+                )
+                .filter(
+                    models.UptakeSecretionRates.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                uptake_secretion_rate.sample.condition.experiment.project_id, "write"
+            )
+            for field, value in payload.items():
+                setattr(uptake_secretion_rate, field, value)
+            db.session.add(uptake_secretion_rate)
+            db.session.commit()
+            return (uptake_secretion_rate, 204)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            uptake_secretion_rate = (
+                models.UptakeSecretionRates.query.filter(
+                    models.UptakeSecretionRates.id == id
+                )
+                .filter(
+                    models.UptakeSecretionRates.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                uptake_secretion_rate.sample.condition.experiment.project_id, "admin"
+            )
+            db.session.delete(uptake_secretion_rate)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class MolarYields(MethodResource):
+    @marshal_with(schemas.MolarYields(many=True), 200)
+    def get(self):
+        return models.MolarYields.query.filter(
+            models.MolarYields.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+            )
+            | models.MolarYields.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.is_(None)
+                    )
+                )
+            )
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.MolarYields(exclude=("id",)))
+    @marshal_with(schemas.MolarYields(only=("id",)), 201)
+    def post(
+        self,
+        sample_id,
+        product_name,
+        product_identifier,
+        product_namespace,
+        substrate_name,
+        substrate_identifier,
+        substrate_namespace,
+        measurement,
+        uncertainty,
+    ):
+        try:
+            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+        except NoResultFound:
+            abort(404, f"Related object {sample_id} does not exist")
+        molar_yield = models.MolarYields(
+            sample=sample,
+            product_name=product_name,
+            product_identifier=product_identifier,
+            product_namespace=product_namespace,
+            substrate_name=substrate_name,
+            substrate_identifier=substrate_identifier,
+            substrate_namespace=substrate_namespace,
+            measurement=measurement,
+            uncertainty=uncertainty,
+        )
+        db.session.add(molar_yield)
+        db.session.commit()
+        return (molar_yield, 201)
+
+
+class MolarYield(MethodResource):
+    @marshal_with(schemas.MolarYields, 200)
+    def get(self, id):
+        try:
+            return (
+                models.MolarYields.query.filter(models.MolarYields.id == id)
+                .filter(
+                    models.MolarYields.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                    | models.MolarYields.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.is_(None)
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.MolarYields(exclude=("id",)))
+    @marshal_with(schemas.MolarYields(only=("id",), partial=True), 204)
+    def put(self, id, **payload):
+        try:
+            molar_yield = (
+                models.MolarYields.query.filter(models.MolarYields.id == id)
+                .filter(
+                    models.MolarYields.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                molar_yield.sample.condition.experiment.project_id, "write"
+            )
+            for field, value in payload.items():
+                setattr(molar_yield, field, value)
+            db.session.add(molar_yield)
+            db.session.commit()
+            return (molar_yield, 204)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            molar_yield = (
+                models.MolarYields.query.filter(models.MolarYields.id == id)
+                .filter(
+                    models.MolarYields.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                molar_yield.sample.condition.experiment.project_id, "admin"
+            )
+            db.session.delete(molar_yield)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class GrowthRates(MethodResource):
+    @marshal_with(schemas.GrowthRate(many=True), 200)
+    def get(self):
+        return models.Growth.query.filter(
+            models.Growth.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+            )
+            | models.Growth.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.is_(None)
+                    )
+                )
+            )
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.GrowthRate(exclude=("id",)))
+    @marshal_with(schemas.GrowthRate(only=("id",)), 201)
+    def post(self, sample_id, measurement, uncertainty):
+        try:
+            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+        except NoResultFound:
+            abort(404, f"Related object {sample_id} does not exist")
+        growth_rate = models.Growth(
+            sample=sample, measurement=measurement, uncertainty=uncertainty
+        )
+        db.session.add(growth_rate)
+        db.session.commit()
+        return (growth_rate, 201)
+
+
+class GrowthRate(MethodResource):
+    @marshal_with(schemas.GrowthRate, 200)
+    def get(self, id):
+        try:
+            return (
+                models.Growth.query.filter(models.Growth.id == id)
+                .filter(
+                    models.Growth.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                    | models.Growth.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.is_(None)
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.GrowthRate(exclude=("id",)))
+    @marshal_with(schemas.GrowthRate(only=("id",), partial=True), 204)
+    def put(self, id, **payload):
+        try:
+            growth_rate = (
+                models.Growth.query.filter(models.Growth.id == id)
+                .filter(
+                    models.Growth.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                growth_rate.sample.condition.experiment.project_id, "write"
+            )
+            for field, value in payload.items():
+                setattr(growth_rate, field, value)
+            db.session.add(growth_rate)
+            db.session.commit()
+            return (growth_rate, 204)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            growth_rate = (
+                models.Growth.query.filter(models.Growth.id == id)
+                .filter(
+                    models.Growth.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                growth_rate.sample.condition.experiment.project_id, "admin"
+            )
+            db.session.delete(growth_rate)
             db.session.commit()
             return make_response("", 204)
