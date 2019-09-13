@@ -54,7 +54,7 @@ def test_put_organism(client, tokens, session, data_fixtures):
         headers={"Authorization": f"Bearer {tokens['admin']}"},
         json={"name": "Modified"},
     )
-    assert response.status_code == 204
+    assert response.status_code == 200
     organism = models.Organism.query.filter(
         models.Organism.id == data_fixtures["organism"].id
     ).one()
@@ -111,7 +111,7 @@ def test_put_strain(client, tokens, session, data_fixtures):
         headers={"Authorization": f"Bearer {tokens['admin']}"},
         json={"name": "Modified"},
     )
-    assert response.status_code == 204
+    assert response.status_code == 200
     strain = models.Strain.query.filter(
         models.Strain.id == data_fixtures["strain"].id
     ).one()
@@ -166,7 +166,7 @@ def test_put_experiment(client, tokens, session, data_fixtures):
         headers={"Authorization": f"Bearer {tokens['admin']}"},
         json={"name": "Modified"},
     )
-    assert response.status_code == 204
+    assert response.status_code == 200
     experiment = models.Experiment.query.filter(
         models.Experiment.id == data_fixtures["experiment"].id
     ).one()
