@@ -100,7 +100,7 @@ class Organism(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.Organism(exclude=("id",), partial=True))
-    @marshal_with(schemas.Organism(only=("id",)), 204)
+    @marshal_with(schemas.Organism(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             organism = (
@@ -120,7 +120,7 @@ class Organism(MethodResource):
                 setattr(organism, field, value)
             db.session.add(organism)
             db.session.commit()
-            return (organism, 204)
+            return (organism, 200)
 
     @jwt_required
     def delete(self, id):
@@ -187,7 +187,7 @@ class Strain(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.Strain(exclude=("id",), partial=True))
-    @marshal_with(schemas.Strain(only=("id",)), 204)
+    @marshal_with(schemas.Strain(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             strain = (
@@ -207,7 +207,7 @@ class Strain(MethodResource):
                 setattr(strain, field, value)
             db.session.add(strain)
             db.session.commit()
-            return (strain, 204)
+            return (strain, 200)
 
     @jwt_required
     def delete(self, id):
@@ -264,7 +264,7 @@ class Experiment(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.Experiment(exclude=("id",), partial=True))
-    @marshal_with(schemas.Experiment(only=("id",)), 204)
+    @marshal_with(schemas.Experiment(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             experiment = (
@@ -284,7 +284,7 @@ class Experiment(MethodResource):
                 setattr(experiment, field, value)
             db.session.add(experiment)
             db.session.commit()
-            return (experiment, 204)
+            return (experiment, 200)
 
     @jwt_required
     def delete(self, id):
@@ -339,7 +339,7 @@ class Medium(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.Medium(exclude=("id",), partial=True))
-    @marshal_with(schemas.Medium(only=("id",)), 204)
+    @marshal_with(schemas.Medium(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             medium = (
@@ -359,7 +359,7 @@ class Medium(MethodResource):
                 setattr(medium, field, value)
             db.session.add(medium)
             db.session.commit()
-            return (medium, 204)
+            return (medium, 200)
 
     @jwt_required
     def delete(self, id):
@@ -434,7 +434,7 @@ class MediumCompound(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.MediumCompound(exclude=("id",), partial=True))
-    @marshal_with(schemas.MediumCompound(only=("id",)), 204)
+    @marshal_with(schemas.MediumCompound(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             medium_compound = (
@@ -454,7 +454,7 @@ class MediumCompound(MethodResource):
                 setattr(medium_compound, field, value)
             db.session.add(medium_compound)
             db.session.commit()
-            return (medium_compound, 204)
+            return (medium_compound, 200)
 
     @jwt_required
     def delete(self, id):
@@ -524,7 +524,7 @@ class Condition(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.Condition(exclude=("id",), partial=True))
-    @marshal_with(schemas.Condition(only=("id",)), 204)
+    @marshal_with(schemas.Condition(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             condition = (
@@ -544,7 +544,7 @@ class Condition(MethodResource):
                 setattr(condition, field, value)
             db.session.add(condition)
             db.session.commit()
-            return (condition, 204)
+            return (condition, 200)
 
     @jwt_required
     def delete(self, id):
@@ -637,7 +637,7 @@ class Sample(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.Sample(exclude=("id",), partial=True))
-    @marshal_with(schemas.Sample(only=("id",)), 204)
+    @marshal_with(schemas.Sample(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             sample = (
@@ -657,7 +657,7 @@ class Sample(MethodResource):
                 setattr(sample, field, value)
             db.session.add(sample)
             db.session.commit()
-            return (sample, 204)
+            return (sample, 200)
 
     @jwt_required
     def delete(self, id):
@@ -759,7 +759,7 @@ class Fluxomic(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.Fluxomics(exclude=("id",), partial=True))
-    @marshal_with(schemas.Fluxomics(only=("id",)), 204)
+    @marshal_with(schemas.Fluxomics(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             fluxomics = (
@@ -783,7 +783,7 @@ class Fluxomic(MethodResource):
                 setattr(fluxomics, field, value)
             db.session.add(fluxomics)
             db.session.commit()
-            return (fluxomics, 204)
+            return (fluxomics, 200)
 
     @jwt_required
     def delete(self, id):
@@ -889,7 +889,7 @@ class Metabolomic(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.Metabolomics(exclude=("id",), partial=True))
-    @marshal_with(schemas.Metabolomics(only=("id",)), 204)
+    @marshal_with(schemas.Metabolomics(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             metabolomics = (
@@ -915,7 +915,7 @@ class Metabolomic(MethodResource):
                 setattr(metabolomics, field, value)
             db.session.add(metabolomics)
             db.session.commit()
-            return (metabolomics, 204)
+            return (metabolomics, 200)
 
     @jwt_required
     def delete(self, id):
@@ -1025,7 +1025,7 @@ class UptakeSecretionRate(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.UptakeSecretionRates(exclude=("id",), partial=True))
-    @marshal_with(schemas.UptakeSecretionRates(only=("id",)), 204)
+    @marshal_with(schemas.UptakeSecretionRates(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             uptake_secretion_rate = (
@@ -1053,7 +1053,7 @@ class UptakeSecretionRate(MethodResource):
                 setattr(uptake_secretion_rate, field, value)
             db.session.add(uptake_secretion_rate)
             db.session.commit()
-            return (uptake_secretion_rate, 204)
+            return (uptake_secretion_rate, 200)
 
     @jwt_required
     def delete(self, id):
@@ -1169,7 +1169,7 @@ class MolarYield(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.MolarYields(exclude=("id",), partial=True))
-    @marshal_with(schemas.MolarYields(only=("id",)), 204)
+    @marshal_with(schemas.MolarYields(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             molar_yield = (
@@ -1195,7 +1195,7 @@ class MolarYield(MethodResource):
                 setattr(molar_yield, field, value)
             db.session.add(molar_yield)
             db.session.commit()
-            return (molar_yield, 204)
+            return (molar_yield, 200)
 
     @jwt_required
     def delete(self, id):
@@ -1290,7 +1290,7 @@ class GrowthRate(MethodResource):
 
     @jwt_required
     @use_kwargs(schemas.GrowthRate(exclude=("id",), partial=True))
-    @marshal_with(schemas.GrowthRate(only=("id",)), 204)
+    @marshal_with(schemas.GrowthRate(only=("id",)), 200)
     def put(self, id, **payload):
         try:
             growth_rate = (
@@ -1316,7 +1316,7 @@ class GrowthRate(MethodResource):
                 setattr(growth_rate, field, value)
             db.session.add(growth_rate)
             db.session.commit()
-            return (growth_rate, 204)
+            return (growth_rate, 200)
 
     @jwt_required
     def delete(self, id):
