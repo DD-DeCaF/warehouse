@@ -135,4 +135,4 @@ class ConditionData(Schema):
     strain = fields.Nested(Strain)
     medium = fields.Nested(NestedMedium)
     name = fields.String()
-    samples = fields.Nested(Sample)
+    samples = fields.Nested(NestedSample, many=True)
