@@ -17,122 +17,125 @@ from marshmallow import Schema, fields
 
 
 class Organism(Schema):
-    id = fields.Integer()
-    project_id = fields.Integer()
-    name = fields.String()
+    id = fields.Integer(required=True)
+    project_id = fields.Integer(required=True)
+    name = fields.String(required=True)
 
 
 class Strain(Schema):
-    id = fields.Integer()
-    project_id = fields.Integer()
-    name = fields.String()
-    parent_id = fields.Integer(allow_none=True)
-    genotype = fields.String()
-    organism_id = fields.Integer()
+    id = fields.Integer(required=True)
+    project_id = fields.Integer(required=True)
+    name = fields.String(required=True)
+    parent_id = fields.Integer(required=True, allow_none=True)
+    genotype = fields.String(required=True)
+    organism_id = fields.Integer(required=True)
 
 
 class Experiment(Schema):
-    id = fields.Integer()
-    project_id = fields.Integer()
-    name = fields.String()
-    description = fields.String()
+    id = fields.Integer(required=True)
+    project_id = fields.Integer(required=True)
+    name = fields.String(required=True)
+    description = fields.String(required=True)
 
 
 class Medium(Schema):
-    id = fields.Integer()
-    project_id = fields.Integer()
-    name = fields.String()
+    id = fields.Integer(required=True)
+    project_id = fields.Integer(required=True)
+    name = fields.String(required=True)
 
 
 class MediumCompound(Schema):
-    id = fields.Integer()
-    medium_id = fields.Integer()
-    compound_name = fields.String()
-    compound_identifier = fields.String()
-    compound_namespace = fields.String()
-    mass_concentration = fields.Float(allow_none=True)  # unit: mmol/l
+    id = fields.Integer(required=True)
+    medium_id = fields.Integer(required=True)
+    compound_name = fields.String(required=True)
+    compound_identifier = fields.String(required=True)
+    compound_namespace = fields.String(required=True)
+    mass_concentration = fields.Float(required=True, allow_none=True)  # unit: mmol/l
 
 
 class Condition(Schema):
-    id = fields.Integer()
-    experiment_id = fields.Integer()
-    strain_id = fields.Integer()
-    medium_id = fields.Integer()
-    name = fields.String()
+    id = fields.Integer(required=True)
+    experiment_id = fields.Integer(required=True)
+    strain_id = fields.Integer(required=True)
+    medium_id = fields.Integer(required=True)
+    name = fields.String(required=True)
 
 
 class Sample(Schema):
-    id = fields.Integer()
-    condition_id = fields.Integer()
-    start_time = fields.DateTime()
-    end_time = fields.DateTime(allow_none=True)
+    id = fields.Integer(required=True)
+    condition_id = fields.Integer(required=True)
+    start_time = fields.DateTime(required=True)
+    end_time = fields.DateTime(required=True, allow_none=True)
 
 
 class Fluxomics(Schema):
-    id = fields.Integer()
-    sample_id = fields.Integer()
-    reaction_name = fields.String()
-    reaction_identifier = fields.String()
-    reaction_namespace = fields.String()
-    measurement = fields.Float()  # unit: mmol/gDW/h
-    uncertainty = fields.Float(allow_none=True)  # unit: mmol/gDW/h
+    id = fields.Integer(required=True)
+    sample_id = fields.Integer(required=True)
+    reaction_name = fields.String(required=True)
+    reaction_identifier = fields.String(required=True)
+    reaction_namespace = fields.String(required=True)
+    measurement = fields.Float(required=True)  # unit: mmol/gDW/h
+    uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW/h
 
 
 class Metabolomics(Schema):
-    id = fields.Integer()
-    sample_id = fields.Integer()
-    compound_name = fields.String()
-    compound_identifier = fields.String()
-    compound_namespace = fields.String()
-    measurement = fields.Float()  # unit: mmol/l
-    uncertainty = fields.Float(allow_none=True)  # unit: mmol/l
+    id = fields.Integer(required=True)
+    sample_id = fields.Integer(required=True)
+    compound_name = fields.String(required=True)
+    compound_identifier = fields.String(required=True)
+    compound_namespace = fields.String(required=True)
+    measurement = fields.Float(required=True)  # unit: mmol/l
+    uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/l
 
 
 class UptakeSecretionRates(Schema):
-    id = fields.Integer()
-    sample_id = fields.Integer()
-    compound_name = fields.String()
-    compound_identifier = fields.String()
-    compound_namespace = fields.String()
-    measurement = fields.Float()  # unit: mmol/gDW/h
-    uncertainty = fields.Float(allow_none=True)  # unit: mmol/gDW/h
+    id = fields.Integer(required=True)
+    sample_id = fields.Integer(required=True)
+    compound_name = fields.String(required=True)
+    compound_identifier = fields.String(required=True)
+    compound_namespace = fields.String(required=True)
+    measurement = fields.Float(required=True)  # unit: mmol/gDW/h
+    uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW/h
 
 
 class MolarYields(Schema):
-    id = fields.Integer()
-    sample_id = fields.Integer()
-    product_name = fields.String()
-    product_identifier = fields.String()
-    product_namespace = fields.String()
-    substrate_name = fields.String()
-    substrate_identifier = fields.String()
-    substrate_namespace = fields.String()
+    id = fields.Integer(required=True)
+    sample_id = fields.Integer(required=True)
+    product_name = fields.String(required=True)
+    product_identifier = fields.String(required=True)
+    product_namespace = fields.String(required=True)
+    substrate_name = fields.String(required=True)
+    substrate_identifier = fields.String(required=True)
+    substrate_namespace = fields.String(required=True)
     # Both in mmol-product / mmol-substrate
-    measurement = fields.Float()
-    uncertainty = fields.Float(allow_none=True)
+    measurement = fields.Float(required=True)
+    uncertainty = fields.Float(required=True, allow_none=True)
 
 
 class GrowthRate(Schema):
-    id = fields.Integer()
-    sample_id = fields.Integer()
-    measurement = fields.Float()  # unit: 1/h
-    uncertainty = fields.Float()  # unit: 1/h; 0 if no uncertainty or unknown
+    id = fields.Integer(required=True)
+    sample_id = fields.Integer(required=True)
+    measurement = fields.Float(required=True)  # unit: 1/h
+    # unit: 1/h; 0 if no uncertainty or unknown
+    uncertainty = fields.Float(required=True)
 
 
 class ConditionData(Schema):
     class NestedMedium(Medium):
-        compounds = fields.Nested(MediumCompound, many=True)
+        compounds = fields.Nested(MediumCompound, many=True, required=True)
 
     class NestedSample(Sample):
-        fluxomics = fields.Nested(Fluxomics, many=True)
-        metabolomics = fields.Nested(Metabolomics, many=True)
-        uptake_secretion_rates = fields.Nested(UptakeSecretionRates, many=True)
-        molar_yields = fields.Nested(MolarYields, many=True)
-        growth_rate = fields.Nested(GrowthRate)
+        fluxomics = fields.Nested(Fluxomics, many=True, required=True)
+        metabolomics = fields.Nested(Metabolomics, many=True, required=True)
+        uptake_secretion_rates = fields.Nested(
+            UptakeSecretionRates, many=True, required=True
+        )
+        molar_yields = fields.Nested(MolarYields, many=True, required=True)
+        growth_rate = fields.Nested(GrowthRate, required=True)
 
-    id = fields.Integer()
-    experiment = fields.Nested(Experiment)
-    strain = fields.Nested(Strain)
-    medium = fields.Nested(NestedMedium)
-    name = fields.String()
-    samples = fields.Nested(NestedSample, many=True)
+    id = fields.Integer(required=True)
+    experiment = fields.Nested(Experiment, required=True)
+    strain = fields.Nested(Strain, required=True)
+    medium = fields.Nested(NestedMedium, required=True)
+    name = fields.String(required=True)
+    samples = fields.Nested(NestedSample, many=True, required=True)
