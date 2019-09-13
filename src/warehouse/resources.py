@@ -99,8 +99,8 @@ class Organism(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.Organism(exclude=("id",)))
-    @marshal_with(schemas.Organism(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.Organism(exclude=("id",), partial=True))
+    @marshal_with(schemas.Organism(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             organism = (
@@ -186,8 +186,8 @@ class Strain(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.Strain(exclude=("id",)))
-    @marshal_with(schemas.Strain(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.Strain(exclude=("id",), partial=True))
+    @marshal_with(schemas.Strain(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             strain = (
@@ -263,8 +263,8 @@ class Experiment(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.Experiment(exclude=("id",)))
-    @marshal_with(schemas.Experiment(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.Experiment(exclude=("id",), partial=True))
+    @marshal_with(schemas.Experiment(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             experiment = (
@@ -338,8 +338,8 @@ class Medium(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.Medium(exclude=("id",)))
-    @marshal_with(schemas.Medium(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.Medium(exclude=("id",), partial=True))
+    @marshal_with(schemas.Medium(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             medium = (
@@ -433,8 +433,8 @@ class MediumCompound(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.MediumCompound(exclude=("id",)))
-    @marshal_with(schemas.MediumCompound(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.MediumCompound(exclude=("id",), partial=True))
+    @marshal_with(schemas.MediumCompound(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             medium_compound = (
@@ -523,8 +523,8 @@ class Condition(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.Condition(exclude=("id",)))
-    @marshal_with(schemas.Condition(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.Condition(exclude=("id",), partial=True))
+    @marshal_with(schemas.Condition(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             condition = (
@@ -636,8 +636,8 @@ class Sample(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.Sample(exclude=("id",)))
-    @marshal_with(schemas.Sample(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.Sample(exclude=("id",), partial=True))
+    @marshal_with(schemas.Sample(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             sample = (
@@ -758,8 +758,8 @@ class Fluxomic(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.Fluxomics(exclude=("id",)))
-    @marshal_with(schemas.Fluxomics(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.Fluxomics(exclude=("id",), partial=True))
+    @marshal_with(schemas.Fluxomics(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             fluxomics = (
@@ -888,8 +888,8 @@ class Metabolomic(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.Metabolomics(exclude=("id",)))
-    @marshal_with(schemas.Metabolomics(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.Metabolomics(exclude=("id",), partial=True))
+    @marshal_with(schemas.Metabolomics(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             metabolomics = (
@@ -1024,8 +1024,8 @@ class UptakeSecretionRate(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.UptakeSecretionRates(exclude=("id",)))
-    @marshal_with(schemas.UptakeSecretionRates(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.UptakeSecretionRates(exclude=("id",), partial=True))
+    @marshal_with(schemas.UptakeSecretionRates(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             uptake_secretion_rate = (
@@ -1168,8 +1168,8 @@ class MolarYield(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.MolarYields(exclude=("id",)))
-    @marshal_with(schemas.MolarYields(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.MolarYields(exclude=("id",), partial=True))
+    @marshal_with(schemas.MolarYields(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             molar_yield = (
@@ -1289,8 +1289,8 @@ class GrowthRate(MethodResource):
             abort(404, f"Cannot find object with id {id}")
 
     @jwt_required
-    @use_kwargs(schemas.GrowthRate(exclude=("id",)))
-    @marshal_with(schemas.GrowthRate(only=("id",), partial=True), 204)
+    @use_kwargs(schemas.GrowthRate(exclude=("id",), partial=True))
+    @marshal_with(schemas.GrowthRate(only=("id",)), 204)
     def put(self, id, **payload):
         try:
             growth_rate = (
