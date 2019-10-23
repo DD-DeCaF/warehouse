@@ -199,6 +199,27 @@ class UptakeSecretionRates(TimestampMixin, db.Model):
     uncertainty = db.Column(db.Float, nullable=True)  # unit: mmol/gDW/h
 
 
+class Proteomics(TimestampMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    sample_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sample.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sample = db.relationship(
+        Sample,
+        backref=db.backref("proteomics", cascade="all, delete-orphan", lazy="dynamic"),
+    )
+
+    name = db.Column(db.Text(), nullable=False)
+    identifier = db.Column(db.Text(), nullable=False)
+    gene = db.Column(db.Text(), nullable=False)
+
+    measurement = db.Column(db.Float, nullable=False)  # unit: mmol/gDW
+    uncertainty = db.Column(db.Float, nullable=True)  # unit: mmol/gDW
+
+
 class MolarYields(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
 

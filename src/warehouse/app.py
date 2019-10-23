@@ -78,6 +78,7 @@ def init_app(application):
     admin.add_view(ModelView(models.Sample, db.session))
     admin.add_view(ModelView(models.Fluxomics, db.session))
     admin.add_view(ModelView(models.Metabolomics, db.session))
+    admin.add_view(ModelView(models.Proteomics, db.session))
     admin.add_view(ModelView(models.UptakeSecretionRates, db.session))
     admin.add_view(ModelView(models.MolarYields, db.session))
     admin.add_view(ModelView(models.Growth, db.session))

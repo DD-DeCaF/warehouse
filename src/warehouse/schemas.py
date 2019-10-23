@@ -88,6 +88,16 @@ class Metabolomics(Schema):
     uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/l
 
 
+class Proteomics(Schema):
+    id = fields.Integer(required=True)
+    sample_id = fields.Integer(required=True)
+    name = fields.String(required=True)
+    identifier = fields.String(required=True)
+    gene = fields.String(required=True)
+    measurement = fields.Float(required=True)  # unit: mmol/gDW
+    uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW
+
+
 class UptakeSecretionRates(Schema):
     id = fields.Integer(required=True)
     sample_id = fields.Integer(required=True)
@@ -127,6 +137,7 @@ class ConditionData(Schema):
     class NestedSample(Sample):
         fluxomics = fields.Nested(Fluxomics, many=True, required=True)
         metabolomics = fields.Nested(Metabolomics, many=True, required=True)
+        proteomics = fields.Nested(Proteomics, many=True, required=True)
         uptake_secretion_rates = fields.Nested(
             UptakeSecretionRates, many=True, required=True
         )

@@ -56,6 +56,8 @@ def init_app(app):
     register("/fluxomics/<int:id>", Fluxomic)
     register("/metabolomics", Metabolomics)
     register("/metabolomics/<int:id>", Metabolomic)
+    register("/proteomics", Proteomics)
+    register("/proteomics/<int:id>", Proteomic)
     register("/uptake-secretion-rates", UptakeSecretionRates)
     register("/uptake-secretion-rates/<int:id>", UptakeSecretionRate)
     register("/molar-yields", MolarYields)
@@ -940,6 +942,132 @@ class Metabolomic(MethodResource):
                 metabolomics.sample.condition.experiment.project_id, "admin"
             )
             db.session.delete(metabolomics)
+            db.session.commit()
+            return make_response("", 204)
+
+
+class Proteomics(MethodResource):
+    @marshal_with(schemas.Proteomics(many=True), 200)
+    def get(self):
+        return models.Proteomics.query.filter(
+            models.Proteomics.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    )
+                )
+            )
+            | models.Proteomics.sample.has(
+                models.Sample.condition.has(
+                    models.Condition.experiment.has(
+                        models.Experiment.project_id.is_(None)
+                    )
+                )
+            )
+        ).all()
+
+    @jwt_required
+    @use_kwargs(schemas.Proteomics(exclude=("id",)))
+    @marshal_with(schemas.Proteomics(only=("id",)), 201)
+    def post(self, sample_id, name, identifier, gene, measurement, uncertainty):
+        try:
+            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+        except NoResultFound:
+            abort(404, f"Related object {sample_id} does not exist")
+        proteomics = models.Proteomics(
+            sample=sample,
+            name=name,
+            identifier=identifier,
+            gene=gene,
+            measurement=measurement,
+            uncertainty=uncertainty,
+        )
+        db.session.add(proteomics)
+        db.session.commit()
+        return (proteomics, 201)
+
+
+class Proteomic(MethodResource):
+    @marshal_with(schemas.Proteomics, 200)
+    def get(self, id):
+        try:
+            return (
+                models.Proteomics.query.filter(models.Proteomics.id == id)
+                .filter(
+                    models.Proteomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                    | models.Proteomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.is_(None)
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+
+    @jwt_required
+    @use_kwargs(schemas.Proteomics(exclude=("id",), partial=True))
+    @marshal_with(schemas.Proteomics(only=("id",)), 200)
+    def put(self, id, **payload):
+        try:
+            proteomics = (
+                models.Proteomics.query.filter(models.Proteomics.id == id)
+                .filter(
+                    models.Proteomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                proteomics.sample.condition.experiment.project_id, "write"
+            )
+            for field, value in payload.items():
+                setattr(proteomics, field, value)
+            db.session.add(proteomics)
+            db.session.commit()
+            return (proteomics, 200)
+
+    @jwt_required
+    def delete(self, id):
+        try:
+            proteomics = (
+                models.Proteomics.query.filter(models.Proteomics.id == id)
+                .filter(
+                    models.Proteomics.sample.has(
+                        models.Sample.condition.has(
+                            models.Condition.experiment.has(
+                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                            )
+                        )
+                    )
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
+        else:
+            jwt_require_claim(
+                proteomics.sample.condition.experiment.project_id, "admin"
+            )
+            db.session.delete(proteomics)
             db.session.commit()
             return make_response("", 204)
 
