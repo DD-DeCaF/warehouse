@@ -27,7 +27,7 @@ services:
       - POSTGRES_DB_NAME=${POSTGRES_DB_NAME:-postgres}
       - POSTGRES_ENV_USERNAME=${POSTGRES_ENV_USERNAME:-postgres}
       - POSTGRES_ENV_PASS=${POSTGRES_ENV_PASS}
-      - BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME:-admin}
+      - BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
       - IAM_API=https://api-staging.dd-decaf.eu/iam
     command: ["/bin/sh","-c","FLASK_APP=src/warehouse/wsgi.py flask db upgrade && gunicorn -c gunicorn.py warehouse.wsgi:app"]
