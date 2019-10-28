@@ -15,6 +15,8 @@
 
 """Provide session level fixtures."""
 
+from datetime import datetime
+
 import pytest
 from jose import jwt
 
@@ -109,11 +111,36 @@ def data_fixtures(session):
         parent=None,
         genotype="Lorem ipsum",
     )
+    medium = models.Medium(name="Medium fixture")
+    medium_compound = models.MediumCompound(
+        medium=medium,
+        compound_name="Medium compound fixture",
+        compound_identifier="M1234",
+        compound_namespace="custom",
+    )
     experiment = models.Experiment(
         project_id=1, name="Experiment fixture", description="Lorem ipsum"
     )
+    condition = models.Condition(
+        experiment=experiment, strain=strain, medium=medium, name="Condition fixture"
+    )
+    sample = models.Sample(
+        condition=condition, start_time=datetime(2019, 10, 28, 14, 00), end_time=None
+    )
     session.add(organism)
     session.add(strain)
+    session.add(medium)
+    session.add(medium_compound)
     session.add(experiment)
+    session.add(condition)
+    session.add(sample)
     session.commit()
-    return {"organism": organism, "strain": strain, "experiment": experiment}
+    return {
+        "organism": organism,
+        "strain": strain,
+        "medium": medium,
+        "medium_compound": medium_compound,
+        "experiment": experiment,
+        "condition": condition,
+        "sample": sample,
+    }
