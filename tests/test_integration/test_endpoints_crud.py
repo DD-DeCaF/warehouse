@@ -185,3 +185,26 @@ def test_delete_experiment(client, tokens, session, data_fixtures):
         ).count()
         == 0
     )
+
+
+def test_post_proteomics(client, tokens, session, data_fixtures):
+    proteomics_request = {
+        "sample_id": data_fixtures["sample"].id,
+        "name": "Aspartate aminotransferase, mitochondrial",
+        "gene": "GOT2",
+        "identifier": "AATM_RABIT",
+        "measurement": 0.1,
+        "uncertainty": 0,
+    }
+    response = client.post(
+        "/proteomics",
+        headers={"Authorization": f"Bearer {tokens['write']}"},
+        json=proteomics_request,
+    )
+    assert response.status_code == 201
+
+    # Check that database entry matches posted data
+    proteomics = models.Proteomics.query.filter(
+        models.Proteomics.id == response.json["id"]
+    ).one()
+    assert proteomics.name == proteomics_request["name"]
