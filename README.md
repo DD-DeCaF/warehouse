@@ -52,3 +52,9 @@ possible variables and their default values.
   [Sentry](https://docs.sentry.io/clients/python/integrations/flask/).
 * `ALLOWED_ORIGINS`: Comma-seperated list of CORS allowed origins.
 * `FLASK_APP`: `src/warehouse/wsgi.py`
+
+### Updating Python dependencies
+
+To compile a new requirements file and then re-build the service with the new requirements, run:
+
+    make pip-compile build
