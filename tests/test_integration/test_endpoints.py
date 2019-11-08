@@ -24,7 +24,7 @@ def test_docs(client):
 
 
 def test_admin_authorized(monkeypatch, client, app):
-    """Test that the flask-admin interface accepts authenticated requests"""
+    """Test that the flask-admin interface accepts authenticated requests."""
     monkeypatch.setitem(app.config, "BASIC_AUTH_USERNAME", "giraffe")
     monkeypatch.setitem(app.config, "BASIC_AUTH_PASSWORD", "secret")
     resp = client.get(
@@ -34,7 +34,7 @@ def test_admin_authorized(monkeypatch, client, app):
 
 
 def test_admin_unauthorized(monkeypatch, client, app):
-    """Test that the flask-admin interface accepts authenticated requests"""
+    """Test that the flask-admin interface accepts authenticated requests."""
     monkeypatch.setitem(app.config, "BASIC_AUTH_USERNAME", "giraffe")
     monkeypatch.setitem(app.config, "BASIC_AUTH_PASSWORD", "secret")
     resp = client.get(
