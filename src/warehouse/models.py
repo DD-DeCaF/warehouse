@@ -212,8 +212,8 @@ class Proteomics(TimestampMixin, db.Model):
         backref=db.backref("proteomics", cascade="all, delete-orphan", lazy="dynamic"),
     )
 
-    name = db.Column(db.Text(), nullable=False)
     identifier = db.Column(db.Text(), nullable=False)
+    full_name = db.Column(db.Text(), nullable=False)
     gene = db.Column(db.Text(), nullable=False)
 
     measurement = db.Column(db.Float, nullable=False)  # unit: mmol/gDW

@@ -190,7 +190,7 @@ def test_delete_experiment(client, tokens, session, data_fixtures):
 def test_post_proteomics(client, tokens, session, data_fixtures):
     proteomics_request = {
         "sample_id": data_fixtures["sample"].id,
-        "name": "Aspartate aminotransferase, mitochondrial",
+        "full_name": "Aspartate aminotransferase, mitochondrial",
         "gene": "GOT2",
         "identifier": "AATM_RABIT",
         "measurement": 0.1,
@@ -207,4 +207,4 @@ def test_post_proteomics(client, tokens, session, data_fixtures):
     proteomics = models.Proteomics.query.filter(
         models.Proteomics.id == response.json["id"]
     ).one()
-    assert proteomics.name == proteomics_request["name"]
+    assert proteomics.full_name == proteomics_request["full_name"]

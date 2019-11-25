@@ -969,7 +969,7 @@ class Proteomics(MethodResource):
     @jwt_required
     @use_kwargs(schemas.Proteomics(exclude=("id",)))
     @marshal_with(schemas.Proteomics(only=("id",)), 201)
-    def post(self, sample_id, name, identifier, gene, measurement, uncertainty):
+    def post(self, sample_id, full_name, identifier, gene, measurement, uncertainty):
         try:
             sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
             jwt_require_claim(sample.condition.experiment.project_id, "write")
@@ -977,7 +977,7 @@ class Proteomics(MethodResource):
             abort(404, f"Related object {sample_id} does not exist")
         proteomics = models.Proteomics(
             sample=sample,
-            name=name,
+            full_name=full_name,
             identifier=identifier,
             gene=gene,
             measurement=measurement,
