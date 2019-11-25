@@ -213,6 +213,7 @@ class Proteomics(TimestampMixin, db.Model):
     )
 
     identifier = db.Column(db.Text(), nullable=False)
+    name = db.Column(db.Text(), nullable=False)
     full_name = db.Column(db.Text(), nullable=False)
     gene = db.Column(db.Text(), nullable=False)
 

@@ -91,8 +91,9 @@ class Metabolomics(Schema):
 class Proteomics(Schema):
     id = fields.Integer(required=True)
     sample_id = fields.Integer(required=True)
-    full_name = fields.String(required=True)
     identifier = fields.String(required=True)
+    name = fields.String(required=True)
+    full_name = fields.String(required=True)
     gene = fields.String(required=True)
     measurement = fields.Float(required=True)  # unit: mmol/gDW
     uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW

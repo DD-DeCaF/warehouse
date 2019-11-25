@@ -190,9 +190,10 @@ def test_delete_experiment(client, tokens, session, data_fixtures):
 def test_post_proteomics(client, tokens, session, data_fixtures):
     proteomics_request = {
         "sample_id": data_fixtures["sample"].id,
+        "identifier": "P12345",
+        "name": "AATM_RABIT",
         "full_name": "Aspartate aminotransferase, mitochondrial",
         "gene": "GOT2",
-        "identifier": "AATM_RABIT",
         "measurement": 0.1,
         "uncertainty": 0,
     }
