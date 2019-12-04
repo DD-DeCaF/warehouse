@@ -93,6 +93,10 @@ class Metabolomics(Schema):
     uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/l
 
 
+class MetabolomicsBatchRequest(Schema):
+    body = DelimitedList(fields.Nested(Metabolomics(exclude=("id",))))
+
+
 class Proteomics(Schema):
     id = fields.Integer(required=True)
     sample_id = fields.Integer(required=True)

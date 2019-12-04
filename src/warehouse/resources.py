@@ -56,6 +56,7 @@ def init_app(app):
     register("/fluxomics/batch", FluxomicsBatch)
     register("/fluxomics/<int:id>", Fluxomic)
     register("/metabolomics", Metabolomics)
+    register("/metabolomics/batch", MetabolomicsBatch)
     register("/metabolomics/<int:id>", Metabolomic)
     register("/proteomics", Proteomics)
     register("/proteomics/batch", ProteomicsBatch)
@@ -898,6 +899,44 @@ class Metabolomics(MethodResource):
             uncertainty=uncertainty,
         )
         db.session.add(metabolomics)
+        db.session.commit()
+        return (metabolomics, 201)
+
+
+class MetabolomicsBatch(MethodResource):
+    @jwt_required
+    @use_kwargs(schemas.MetabolomicsBatchRequest)
+    @marshal_with(schemas.Metabolomics(only=("id",), many=True), 201)
+    def post(self, body):
+        metabolomics = []
+        verified_project_ids = set()
+        for metabolomics_item in body:
+            try:
+                sample = models.Sample.query.filter(
+                    models.Sample.id == metabolomics_item["sample_id"]
+                ).one()
+
+                project_id = sample.condition.experiment.project_id
+                
+                if project_id not in verified_project_ids:
+                    jwt_require_claim(project_id, "write")
+                    verified_project_ids.add(project_id)
+
+                metabolomics.append(
+                    models.Metabolomics(
+                        sample=sample,
+                        compound_name=metabolomics_item["compound_name"],
+                        compound_identifier=metabolomics_item["compound_identifier"],
+                        compound_namespace=metabolomics_item["compound_namespace"],
+                        measurement=metabolomics_item["measurement"],
+                        uncertainty=metabolomics_item["uncertainty"],
+                    )
+                )
+            except NoResultFound:
+                abort(
+                    404, f"Related object {metabolomics_item['sample_id']} does not exist"
+                )
+        db.session.add_all(metabolomics)
         db.session.commit()
         return (metabolomics, 201)
 
