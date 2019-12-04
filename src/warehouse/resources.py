@@ -53,6 +53,7 @@ def init_app(app):
     register("/samples", Samples)
     register("/samples/<int:id>", Sample)
     register("/fluxomics", Fluxomics)
+    register("/fluxomics/batch", FluxomicsBatch)
     register("/fluxomics/<int:id>", Fluxomic)
     register("/metabolomics", Metabolomics)
     register("/metabolomics/<int:id>", Metabolomic)
@@ -729,6 +730,44 @@ class Fluxomics(MethodResource):
             uncertainty=uncertainty,
         )
         db.session.add(fluxomics)
+        db.session.commit()
+        return (fluxomics, 201)
+
+
+class FluxomicsBatch(MethodResource):
+    @jwt_required
+    @use_kwargs(schemas.FluxomicsBatchRequest)
+    @marshal_with(schemas.Fluxomics(only=("id",), many=True), 201)
+    def post(self, body):
+        fluxomics = []
+        verified_project_ids = set()
+        for fluxomics_item in body:
+            try:
+                sample = models.Sample.query.filter(
+                    models.Sample.id == fluxomics_item["sample_id"]
+                ).one()
+
+                project_id = sample.condition.experiment.project_id
+                
+                if project_id not in verified_project_ids:
+                    jwt_require_claim(project_id, "write")
+                    verified_project_ids.add(project_id)
+
+                fluxomics.append(
+                    models.Fluxomics(
+                        sample=sample,
+                        reaction_name=fluxomics_item["reaction_name"],
+                        reaction_identifier=fluxomics_item["reaction_identifier"],
+                        reaction_namespace=fluxomics_item["reaction_namespace"],
+                        measurement=fluxomics_item["measurement"],
+                        uncertainty=fluxomics_item["uncertainty"],
+                    )
+                )
+            except NoResultFound:
+                abort(
+                    404, f"Related object {fluxomics_item['sample_id']} does not exist"
+                )
+        db.session.add_all(fluxomics)
         db.session.commit()
         return (fluxomics, 201)
 

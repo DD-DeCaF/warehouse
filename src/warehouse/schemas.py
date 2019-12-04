@@ -79,6 +79,10 @@ class Fluxomics(Schema):
     uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW/h
 
 
+class FluxomicsBatchRequest(Schema):
+    body = DelimitedList(fields.Nested(Fluxomics(exclude=("id",))))
+
+
 class Metabolomics(Schema):
     id = fields.Integer(required=True)
     sample_id = fields.Integer(required=True)
