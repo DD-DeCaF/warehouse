@@ -57,6 +57,7 @@ def init_app(app):
     register("/metabolomics", Metabolomics)
     register("/metabolomics/<int:id>", Metabolomic)
     register("/proteomics", Proteomics)
+    register("/proteomics/batch", ProteomicsBatch)
     register("/proteomics/<int:id>", Proteomic)
     register("/uptake-secretion-rates", UptakeSecretionRates)
     register("/uptake-secretion-rates/<int:id>", UptakeSecretionRate)
@@ -987,6 +988,45 @@ class Proteomics(MethodResource):
             uncertainty=uncertainty,
         )
         db.session.add(proteomics)
+        db.session.commit()
+        return (proteomics, 201)
+
+
+class ProteomicsBatch(MethodResource):
+    @jwt_required
+    @use_kwargs(schemas.ProteomicsBatchRequest)
+    @marshal_with(schemas.Proteomics(only=("id",), many=True), 201)
+    def post(self, body):
+        proteomics = []
+        verified_project_ids = set()
+        for proteomics_item in body:
+            try:
+                sample = models.Sample.query.filter(
+                    models.Sample.id == proteomics_item["sample_id"]
+                ).one()
+
+                project_id = sample.condition.experiment.project_id
+                
+                if project_id not in verified_project_ids:
+                    jwt_require_claim(project_id, "write")
+                    verified_project_ids.add(project_id)
+
+                proteomics.append(
+                    models.Proteomics(
+                        sample=sample,
+                        identifier=proteomics_item["identifier"],
+                        name=proteomics_item["name"],
+                        full_name=proteomics_item["full_name"],
+                        gene=proteomics_item["gene"],
+                        measurement=proteomics_item["measurement"],
+                        uncertainty=proteomics_item["uncertainty"],
+                    )
+                )
+            except NoResultFound:
+                abort(
+                    404, f"Related object {proteomics_item['sample_id']} does not exist"
+                )
+        db.session.add_all(proteomics)
         db.session.commit()
         return (proteomics, 201)
 

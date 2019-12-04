@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from marshmallow import Schema, fields
+from webargs.fields import DelimitedList
 
 
 class Organism(Schema):
@@ -97,6 +98,10 @@ class Proteomics(Schema):
     gene = fields.String(required=True)
     measurement = fields.Float(required=True)  # unit: mmol/gDW
     uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW
+
+
+class ProteomicsBatchRequest(Schema):
+    body = DelimitedList(fields.Nested(Proteomics(exclude=("id",))))
 
 
 class UptakeSecretionRates(Schema):
