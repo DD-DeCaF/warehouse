@@ -225,7 +225,8 @@ def test_batch_post_proteomics(client, tokens, session, data_fixtures):
                 "gene": "GOT2",
                 "measurement": 0.1,
                 "uncertainty": 0,
-            } for i in range(item_count)
+            }
+            for i in range(item_count)
         ]
     }
     response = client.post(
@@ -237,9 +238,11 @@ def test_batch_post_proteomics(client, tokens, session, data_fixtures):
 
     # Check that database entries match posted data
     proteomics_ids = set([data["id"] for data in response.json])
-    proteomics = models.Proteomics.query.filter(
-        models.Proteomics.id.in_(proteomics_ids)).order_by(
-            cast(models.Proteomics.identifier, Integer)).all()
+    proteomics = (
+        models.Proteomics.query.filter(models.Proteomics.id.in_(proteomics_ids))
+        .order_by(cast(models.Proteomics.identifier, Integer))
+        .all()
+    )
     for i in range(item_count):
         assert proteomics[i].identifier == proteomics_request["body"][i]["identifier"]
 
@@ -255,7 +258,8 @@ def test_batch_post_fluxomics(client, tokens, session, data_fixtures):
                 "reaction_namespace": "metanetx.reaction",
                 "measurement": 0.1,
                 "uncertainty": 0,
-            } for i in range(item_count)
+            }
+            for i in range(item_count)
         ]
     }
     response = client.post(
@@ -267,12 +271,16 @@ def test_batch_post_fluxomics(client, tokens, session, data_fixtures):
 
     # Check that database entries match posted data
     fluxomics_ids = set([data["id"] for data in response.json])
-    fluxomics = models.Fluxomics.query.filter(
-        models.Fluxomics.id.in_(fluxomics_ids)).order_by(
-            cast(models.Fluxomics.reaction_identifier, Integer)).all()
+    fluxomics = (
+        models.Fluxomics.query.filter(models.Fluxomics.id.in_(fluxomics_ids))
+        .order_by(cast(models.Fluxomics.reaction_identifier, Integer))
+        .all()
+    )
     for i in range(item_count):
-        assert (fluxomics[i].reaction_identifier
-                == fluxomics_request["body"][i]["reaction_identifier"])
+        assert (
+            fluxomics[i].reaction_identifier
+            == fluxomics_request["body"][i]["reaction_identifier"]
+        )
 
 
 def test_batch_post_metabolomics(client, tokens, session, data_fixtures):
@@ -286,7 +294,8 @@ def test_batch_post_metabolomics(client, tokens, session, data_fixtures):
                 "compound_namespace": "metanetx.chemical",
                 "measurement": 0.1,
                 "uncertainty": 0,
-            } for i in range(item_count)
+            }
+            for i in range(item_count)
         ]
     }
     response = client.post(
@@ -298,9 +307,13 @@ def test_batch_post_metabolomics(client, tokens, session, data_fixtures):
 
     # Check that database entries match posted data
     metabolomics_ids = set([data["id"] for data in response.json])
-    metabolomics = models.Metabolomics.query.filter(
-        models.Metabolomics.id.in_(metabolomics_ids)).order_by(
-            cast(models.Metabolomics.compound_identifier, Integer)).all()
+    metabolomics = (
+        models.Metabolomics.query.filter(models.Metabolomics.id.in_(metabolomics_ids))
+        .order_by(cast(models.Metabolomics.compound_identifier, Integer))
+        .all()
+    )
     for i in range(item_count):
-        assert (metabolomics[i].compound_identifier
-                == metabolomics_request["body"][i]["compound_identifier"])
+        assert (
+            metabolomics[i].compound_identifier
+            == metabolomics_request["body"][i]["compound_identifier"]
+        )

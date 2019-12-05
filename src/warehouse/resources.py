@@ -751,7 +751,7 @@ class FluxomicsBatch(MethodResource):
                 404,
                 f"Related objects: "
                 f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
-                f"do not exist"
+                f"do not exist",
             )
 
         for sample in samples:
@@ -765,7 +765,8 @@ class FluxomicsBatch(MethodResource):
                 reaction_namespace=fluxomics_item["reaction_namespace"],
                 measurement=fluxomics_item["measurement"],
                 uncertainty=fluxomics_item["uncertainty"],
-            ) for fluxomics_item in body
+            )
+            for fluxomics_item in body
         ]
         db.session.add_all(fluxomics)
         db.session.commit()
@@ -918,7 +919,7 @@ class MetabolomicsBatch(MethodResource):
                 404,
                 f"Related objects: "
                 f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
-                f"do not exist"
+                f"do not exist",
             )
 
         for sample in samples:
@@ -932,7 +933,8 @@ class MetabolomicsBatch(MethodResource):
                 compound_namespace=metabolomics_item["compound_namespace"],
                 measurement=metabolomics_item["measurement"],
                 uncertainty=metabolomics_item["uncertainty"],
-            ) for metabolomics_item in body
+            )
+            for metabolomics_item in body
         ]
         db.session.add_all(metabolomics)
         db.session.commit()
@@ -1084,7 +1086,7 @@ class ProteomicsBatch(MethodResource):
                 404,
                 f"Related objects: "
                 f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
-                f"do not exist"
+                f"do not exist",
             )
 
         for sample in samples:
@@ -1099,7 +1101,8 @@ class ProteomicsBatch(MethodResource):
                 gene=proteomics_item["gene"],
                 measurement=proteomics_item["measurement"],
                 uncertainty=proteomics_item["uncertainty"],
-            ) for proteomics_item in body
+            )
+            for proteomics_item in body
         ]
         db.session.add_all(proteomics)
         db.session.commit()
