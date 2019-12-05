@@ -740,34 +740,33 @@ class FluxomicsBatch(MethodResource):
     @use_kwargs(schemas.FluxomicsBatchRequest)
     @marshal_with(schemas.Fluxomics(only=("id",), many=True), 201)
     def post(self, body):
-        fluxomics = []
-        verified_project_ids = set()
-        for fluxomics_item in body:
-            try:
-                sample = models.Sample.query.filter(
-                    models.Sample.id == fluxomics_item["sample_id"]
-                ).one()
+        sample_ids = set(fluxomics_item["sample_id"] for fluxomics_item in body)
+        samples = models.Sample.query.filter(models.Sample.id.in_(sample_ids)).all()
 
-                project_id = sample.condition.experiment.project_id
-                
-                if project_id not in verified_project_ids:
-                    jwt_require_claim(project_id, "write")
-                    verified_project_ids.add(project_id)
+        if len(sample_ids) != len(samples):
+            missing_sample_ids = sample_ids.difference(
+                set([sample.id for sample in samples])
+            )
+            abort(
+                404,
+                f"Related objects: "
+                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"do not exist"
+            )
 
-                fluxomics.append(
-                    models.Fluxomics(
-                        sample=sample,
-                        reaction_name=fluxomics_item["reaction_name"],
-                        reaction_identifier=fluxomics_item["reaction_identifier"],
-                        reaction_namespace=fluxomics_item["reaction_namespace"],
-                        measurement=fluxomics_item["measurement"],
-                        uncertainty=fluxomics_item["uncertainty"],
-                    )
-                )
-            except NoResultFound:
-                abort(
-                    404, f"Related object {fluxomics_item['sample_id']} does not exist"
-                )
+        for sample in samples:
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+
+        fluxomics = [
+            models.Fluxomics(
+                sample_id=fluxomics_item["sample_id"],
+                reaction_name=fluxomics_item["reaction_name"],
+                reaction_identifier=fluxomics_item["reaction_identifier"],
+                reaction_namespace=fluxomics_item["reaction_namespace"],
+                measurement=fluxomics_item["measurement"],
+                uncertainty=fluxomics_item["uncertainty"],
+            ) for fluxomics_item in body
+        ]
         db.session.add_all(fluxomics)
         db.session.commit()
         return (fluxomics, 201)
@@ -908,34 +907,33 @@ class MetabolomicsBatch(MethodResource):
     @use_kwargs(schemas.MetabolomicsBatchRequest)
     @marshal_with(schemas.Metabolomics(only=("id",), many=True), 201)
     def post(self, body):
-        metabolomics = []
-        verified_project_ids = set()
-        for metabolomics_item in body:
-            try:
-                sample = models.Sample.query.filter(
-                    models.Sample.id == metabolomics_item["sample_id"]
-                ).one()
+        sample_ids = set(metabolomics_item["sample_id"] for metabolomics_item in body)
+        samples = models.Sample.query.filter(models.Sample.id.in_(sample_ids)).all()
 
-                project_id = sample.condition.experiment.project_id
-                
-                if project_id not in verified_project_ids:
-                    jwt_require_claim(project_id, "write")
-                    verified_project_ids.add(project_id)
+        if len(sample_ids) != len(samples):
+            missing_sample_ids = sample_ids.difference(
+                set([sample.id for sample in samples])
+            )
+            abort(
+                404,
+                f"Related objects: "
+                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"do not exist"
+            )
 
-                metabolomics.append(
-                    models.Metabolomics(
-                        sample=sample,
-                        compound_name=metabolomics_item["compound_name"],
-                        compound_identifier=metabolomics_item["compound_identifier"],
-                        compound_namespace=metabolomics_item["compound_namespace"],
-                        measurement=metabolomics_item["measurement"],
-                        uncertainty=metabolomics_item["uncertainty"],
-                    )
-                )
-            except NoResultFound:
-                abort(
-                    404, f"Related object {metabolomics_item['sample_id']} does not exist"
-                )
+        for sample in samples:
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+
+        metabolomics = [
+            models.Metabolomics(
+                sample_id=metabolomics_item["sample_id"],
+                compound_name=metabolomics_item["compound_name"],
+                compound_identifier=metabolomics_item["compound_identifier"],
+                compound_namespace=metabolomics_item["compound_namespace"],
+                measurement=metabolomics_item["measurement"],
+                uncertainty=metabolomics_item["uncertainty"],
+            ) for metabolomics_item in body
+        ]
         db.session.add_all(metabolomics)
         db.session.commit()
         return (metabolomics, 201)
@@ -1075,35 +1073,34 @@ class ProteomicsBatch(MethodResource):
     @use_kwargs(schemas.ProteomicsBatchRequest)
     @marshal_with(schemas.Proteomics(only=("id",), many=True), 201)
     def post(self, body):
-        proteomics = []
-        verified_project_ids = set()
-        for proteomics_item in body:
-            try:
-                sample = models.Sample.query.filter(
-                    models.Sample.id == proteomics_item["sample_id"]
-                ).one()
+        sample_ids = set(proteomics_item["sample_id"] for proteomics_item in body)
+        samples = models.Sample.query.filter(models.Sample.id.in_(sample_ids)).all()
 
-                project_id = sample.condition.experiment.project_id
-                
-                if project_id not in verified_project_ids:
-                    jwt_require_claim(project_id, "write")
-                    verified_project_ids.add(project_id)
+        if len(sample_ids) != len(samples):
+            missing_sample_ids = sample_ids.difference(
+                set([sample.id for sample in samples])
+            )
+            abort(
+                404,
+                f"Related objects: "
+                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"do not exist"
+            )
 
-                proteomics.append(
-                    models.Proteomics(
-                        sample=sample,
-                        identifier=proteomics_item["identifier"],
-                        name=proteomics_item["name"],
-                        full_name=proteomics_item["full_name"],
-                        gene=proteomics_item["gene"],
-                        measurement=proteomics_item["measurement"],
-                        uncertainty=proteomics_item["uncertainty"],
-                    )
-                )
-            except NoResultFound:
-                abort(
-                    404, f"Related object {proteomics_item['sample_id']} does not exist"
-                )
+        for sample in samples:
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+
+        proteomics = [
+            models.Proteomics(
+                sample_id=proteomics_item["sample_id"],
+                identifier=proteomics_item["identifier"],
+                name=proteomics_item["name"],
+                full_name=proteomics_item["full_name"],
+                gene=proteomics_item["gene"],
+                measurement=proteomics_item["measurement"],
+                uncertainty=proteomics_item["uncertainty"],
+            ) for proteomics_item in body
+        ]
         db.session.add_all(proteomics)
         db.session.commit()
         return (proteomics, 201)
