@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from marshmallow import Schema, fields
+from webargs.fields import DelimitedList
 
 
 class Organism(Schema):
@@ -78,6 +79,10 @@ class Fluxomics(Schema):
     uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW/h
 
 
+class FluxomicsBatchRequest(Schema):
+    body = DelimitedList(fields.Nested(Fluxomics(exclude=("id",))))
+
+
 class Metabolomics(Schema):
     id = fields.Integer(required=True)
     sample_id = fields.Integer(required=True)
@@ -86,6 +91,10 @@ class Metabolomics(Schema):
     compound_namespace = fields.String(required=True)
     measurement = fields.Float(required=True)  # unit: mmol/l
     uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/l
+
+
+class MetabolomicsBatchRequest(Schema):
+    body = DelimitedList(fields.Nested(Metabolomics(exclude=("id",))))
 
 
 class Proteomics(Schema):
@@ -97,6 +106,10 @@ class Proteomics(Schema):
     gene = fields.String(required=True)
     measurement = fields.Float(required=True)  # unit: mmol/gDW
     uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW
+
+
+class ProteomicsBatchRequest(Schema):
+    body = DelimitedList(fields.Nested(Proteomics(exclude=("id",))))
 
 
 class UptakeSecretionRates(Schema):

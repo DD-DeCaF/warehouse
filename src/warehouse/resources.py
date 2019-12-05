@@ -53,10 +53,13 @@ def init_app(app):
     register("/samples", Samples)
     register("/samples/<int:id>", Sample)
     register("/fluxomics", Fluxomics)
+    register("/fluxomics/batch", FluxomicsBatch)
     register("/fluxomics/<int:id>", Fluxomic)
     register("/metabolomics", Metabolomics)
+    register("/metabolomics/batch", MetabolomicsBatch)
     register("/metabolomics/<int:id>", Metabolomic)
     register("/proteomics", Proteomics)
+    register("/proteomics/batch", ProteomicsBatch)
     register("/proteomics/<int:id>", Proteomic)
     register("/uptake-secretion-rates", UptakeSecretionRates)
     register("/uptake-secretion-rates/<int:id>", UptakeSecretionRate)
@@ -732,6 +735,44 @@ class Fluxomics(MethodResource):
         return (fluxomics, 201)
 
 
+class FluxomicsBatch(MethodResource):
+    @jwt_required
+    @use_kwargs(schemas.FluxomicsBatchRequest)
+    @marshal_with(schemas.Fluxomics(only=("id",), many=True), 201)
+    def post(self, body):
+        sample_ids = set(fluxomics_item["sample_id"] for fluxomics_item in body)
+        samples = models.Sample.query.filter(models.Sample.id.in_(sample_ids)).all()
+
+        if len(sample_ids) != len(samples):
+            missing_sample_ids = sample_ids.difference(
+                set([sample.id for sample in samples])
+            )
+            abort(
+                404,
+                f"Related objects: "
+                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"do not exist",
+            )
+
+        for sample in samples:
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+
+        fluxomics = [
+            models.Fluxomics(
+                sample_id=fluxomics_item["sample_id"],
+                reaction_name=fluxomics_item["reaction_name"],
+                reaction_identifier=fluxomics_item["reaction_identifier"],
+                reaction_namespace=fluxomics_item["reaction_namespace"],
+                measurement=fluxomics_item["measurement"],
+                uncertainty=fluxomics_item["uncertainty"],
+            )
+            for fluxomics_item in body
+        ]
+        db.session.add_all(fluxomics)
+        db.session.commit()
+        return (fluxomics, 201)
+
+
 class Fluxomic(MethodResource):
     @marshal_with(schemas.Fluxomics, 200)
     def get(self, id):
@@ -862,6 +903,44 @@ class Metabolomics(MethodResource):
         return (metabolomics, 201)
 
 
+class MetabolomicsBatch(MethodResource):
+    @jwt_required
+    @use_kwargs(schemas.MetabolomicsBatchRequest)
+    @marshal_with(schemas.Metabolomics(only=("id",), many=True), 201)
+    def post(self, body):
+        sample_ids = set(metabolomics_item["sample_id"] for metabolomics_item in body)
+        samples = models.Sample.query.filter(models.Sample.id.in_(sample_ids)).all()
+
+        if len(sample_ids) != len(samples):
+            missing_sample_ids = sample_ids.difference(
+                set([sample.id for sample in samples])
+            )
+            abort(
+                404,
+                f"Related objects: "
+                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"do not exist",
+            )
+
+        for sample in samples:
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+
+        metabolomics = [
+            models.Metabolomics(
+                sample_id=metabolomics_item["sample_id"],
+                compound_name=metabolomics_item["compound_name"],
+                compound_identifier=metabolomics_item["compound_identifier"],
+                compound_namespace=metabolomics_item["compound_namespace"],
+                measurement=metabolomics_item["measurement"],
+                uncertainty=metabolomics_item["uncertainty"],
+            )
+            for metabolomics_item in body
+        ]
+        db.session.add_all(metabolomics)
+        db.session.commit()
+        return (metabolomics, 201)
+
+
 class Metabolomic(MethodResource):
     @marshal_with(schemas.Metabolomics, 200)
     def get(self, id):
@@ -987,6 +1066,45 @@ class Proteomics(MethodResource):
             uncertainty=uncertainty,
         )
         db.session.add(proteomics)
+        db.session.commit()
+        return (proteomics, 201)
+
+
+class ProteomicsBatch(MethodResource):
+    @jwt_required
+    @use_kwargs(schemas.ProteomicsBatchRequest)
+    @marshal_with(schemas.Proteomics(only=("id",), many=True), 201)
+    def post(self, body):
+        sample_ids = set(proteomics_item["sample_id"] for proteomics_item in body)
+        samples = models.Sample.query.filter(models.Sample.id.in_(sample_ids)).all()
+
+        if len(sample_ids) != len(samples):
+            missing_sample_ids = sample_ids.difference(
+                set([sample.id for sample in samples])
+            )
+            abort(
+                404,
+                f"Related objects: "
+                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"do not exist",
+            )
+
+        for sample in samples:
+            jwt_require_claim(sample.condition.experiment.project_id, "write")
+
+        proteomics = [
+            models.Proteomics(
+                sample_id=proteomics_item["sample_id"],
+                identifier=proteomics_item["identifier"],
+                name=proteomics_item["name"],
+                full_name=proteomics_item["full_name"],
+                gene=proteomics_item["gene"],
+                measurement=proteomics_item["measurement"],
+                uncertainty=proteomics_item["uncertainty"],
+            )
+            for proteomics_item in body
+        ]
+        db.session.add_all(proteomics)
         db.session.commit()
         return (proteomics, 201)
 
