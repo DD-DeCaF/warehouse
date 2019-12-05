@@ -22,6 +22,7 @@ each resource type.
 """
 
 from warehouse import models
+from sqlalchemy import cast, Integer
 
 
 def test_get_organisms(client, tokens, session, data_fixtures):
@@ -212,18 +213,18 @@ def test_post_proteomics(client, tokens, session, data_fixtures):
 
 
 def test_batch_post_proteomics(client, tokens, session, data_fixtures):
-    n = 100
+    item_count = 100
     proteomics_request = {
         "body": [
             {
                 "sample_id": data_fixtures["sample"].id,
-                "identifier": "P12345",
+                "identifier": str(i),
                 "name": "AATM_RABIT",
                 "full_name": "Aspartate aminotransferase, mitochondrial",
                 "gene": "GOT2",
                 "measurement": 0.1,
                 "uncertainty": 0,
-            } for _ in range(n)
+            } for i in range(item_count)
         ]
     }
     response = client.post(
@@ -234,25 +235,26 @@ def test_batch_post_proteomics(client, tokens, session, data_fixtures):
     assert response.status_code == 201
 
     # Check that database entries match posted data
-    for i in range(n):
-        proteomics = models.Proteomics.query.filter(
-            models.Proteomics.id == response.json[i]["id"]
-        ).one()
-        assert proteomics.full_name == proteomics_request["body"][i]["full_name"]
+    proteomics_ids = set([data["id"] for data in response.json])
+    proteomics = models.Proteomics.query.filter(
+        models.Proteomics.id.in_(proteomics_ids)).order_by(
+            cast(models.Proteomics.identifier, Integer)).all()
+    for i in range(item_count):
+        assert proteomics[i].identifier == proteomics_request["body"][i]["identifier"]
 
 
 def test_batch_post_fluxomics(client, tokens, session, data_fixtures):
-    n = 100
+    item_count = 100
     fluxomics_request = {
         "body": [
             {
                 "sample_id": data_fixtures["sample"].id,
                 "reaction_name": "5-glutamyl-10FTHF transport, lysosomal",
-                "reaction_identifier": "MNXR94668",
+                "reaction_identifier": str(i),
                 "reaction_namespace": "metanetx.reaction",
                 "measurement": 0.1,
                 "uncertainty": 0,
-            } for _ in range(n)
+            } for i in range(item_count)
         ]
     }
     response = client.post(
@@ -263,25 +265,27 @@ def test_batch_post_fluxomics(client, tokens, session, data_fixtures):
     assert response.status_code == 201
 
     # Check that database entries match posted data
-    for i in range(n):
-        fluxomics = models.Fluxomics.query.filter(
-            models.Fluxomics.id == response.json[i]["id"]
-        ).one()
-        assert fluxomics.reaction_name == fluxomics_request["body"][i]["reaction_name"]
+    fluxomics_ids = set([data["id"] for data in response.json])
+    fluxomics = models.Fluxomics.query.filter(
+        models.Fluxomics.id.in_(fluxomics_ids)).order_by(
+            cast(models.Fluxomics.reaction_identifier, Integer)).all()
+    for i in range(item_count):
+        assert (fluxomics[i].reaction_identifier
+                == fluxomics_request["body"][i]["reaction_identifier"])
 
 
 def test_batch_post_metabolomics(client, tokens, session, data_fixtures):
-    n = 100
+    item_count = 100
     metabolomics_request = {
         "body": [
             {
                 "sample_id": data_fixtures["sample"].id,
                 "compound_name": "H(+)",
-                "compound_identifier": "MNXM01",
+                "compound_identifier": str(i),
                 "compound_namespace": "metanetx.chemical",
                 "measurement": 0.1,
                 "uncertainty": 0,
-            } for _ in range(n)
+            } for i in range(item_count)
         ]
     }
     response = client.post(
@@ -292,8 +296,10 @@ def test_batch_post_metabolomics(client, tokens, session, data_fixtures):
     assert response.status_code == 201
 
     # Check that database entries match posted data
-    for i in range(n):
-        metabolomics = models.Metabolomics.query.filter(
-            models.Metabolomics.id == response.json[i]["id"]
-        ).one()
-        assert metabolomics.compound_name == metabolomics_request["body"][i]["compound_name"]
+    metabolomics_ids = set([data["id"] for data in response.json])
+    metabolomics = models.Metabolomics.query.filter(
+        models.Metabolomics.id.in_(metabolomics_ids)).order_by(
+            cast(models.Metabolomics.compound_identifier, Integer)).all()
+    for i in range(item_count):
+        assert (metabolomics[i].compound_identifier
+                == metabolomics_request["body"][i]["compound_identifier"])
