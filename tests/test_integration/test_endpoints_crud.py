@@ -21,8 +21,9 @@ GET, POST for list endpoints, then GET, PUT, DELETE for item endpoints, repeated
 each resource type.
 """
 
+from sqlalchemy import Integer, cast
+
 from warehouse import models
-from sqlalchemy import cast, Integer
 
 
 def test_get_organisms(client, tokens, session, data_fixtures):
