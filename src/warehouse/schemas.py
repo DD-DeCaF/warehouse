@@ -103,7 +103,7 @@ class Proteomics(Schema):
     identifier = fields.String(required=True)
     name = fields.String(required=True)
     full_name = fields.String(required=True)
-    gene = fields.String(required=True)
+    gene = fields.Dict(required=True)
     measurement = fields.Float(required=True)  # unit: mmol/gDW
     uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW
 
