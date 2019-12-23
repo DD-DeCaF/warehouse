@@ -14,6 +14,8 @@
 
 from datetime import datetime
 
+from sqlalchemy.dialects import postgresql
+
 from warehouse.app import db
 
 
@@ -215,7 +217,7 @@ class Proteomics(TimestampMixin, db.Model):
     identifier = db.Column(db.Text(), nullable=False)
     name = db.Column(db.Text(), nullable=False)
     full_name = db.Column(db.Text(), nullable=False)
-    gene = db.Column(db.Text(), nullable=False)
+    gene = db.Column(postgresql.JSON, nullable=False)
 
     measurement = db.Column(db.Float, nullable=False)  # unit: mmol/gDW
     uncertainty = db.Column(db.Float, nullable=True)  # unit: mmol/gDW
