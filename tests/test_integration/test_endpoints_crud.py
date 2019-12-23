@@ -195,7 +195,7 @@ def test_post_proteomics(client, tokens, session, data_fixtures):
         "identifier": "P12345",
         "name": "AATM_RABIT",
         "full_name": "Aspartate aminotransferase, mitochondrial",
-        "gene": "GOT2",
+        "gene": {"primary": "GOT2"},
         "measurement": 0.1,
         "uncertainty": 0,
     }
@@ -222,7 +222,7 @@ def test_batch_post_proteomics(client, tokens, session, data_fixtures):
                 "identifier": str(i),
                 "name": "AATM_RABIT",
                 "full_name": "Aspartate aminotransferase, mitochondrial",
-                "gene": "GOT2",
+                "gene": {"primary": "GOT2"},
                 "measurement": 0.1,
                 "uncertainty": 0,
             }
