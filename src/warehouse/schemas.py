@@ -147,7 +147,7 @@ class GrowthRate(Schema):
 # Schemas below include full relation objects across foreign keys in the models.
 
 
-class SampleData(Schema):
+class SampleData(Sample):
     fluxomics = fields.Nested(Fluxomics, many=True, required=True)
     metabolomics = fields.Nested(Metabolomics, many=True, required=True)
     proteomics = fields.Nested(Proteomics, many=True, required=True)
