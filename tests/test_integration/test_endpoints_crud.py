@@ -189,6 +189,14 @@ def test_delete_experiment(client, tokens, session, data_fixtures):
     )
 
 
+def test_get_experiment_data(client, tokens, session, data_fixtures):
+    response = client.get(
+        f"/experiments/{data_fixtures['experiment'].id}/data",
+        headers={"Authorization": f"Bearer {tokens['read']}"},
+    )
+    assert response.status_code == 200
+
+
 def test_post_proteomics(client, tokens, session, data_fixtures):
     proteomics_request = {
         "sample_id": data_fixtures["sample"].id,
