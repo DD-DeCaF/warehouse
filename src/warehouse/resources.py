@@ -43,6 +43,7 @@ def init_app(app):
     register("/strains/<int:id>", Strain)
     register("/experiments", Experiments)
     register("/experiments/<int:id>", Experiment)
+    register("/experiments/<int:id>/data", ExperimentData)
     register("/media", Media)
     register("/media/<int:id>", Medium)
     register("/media/compounds", MediumCompounds)
@@ -306,6 +307,22 @@ class Experiment(MethodResource):
             db.session.delete(experiment)
             db.session.commit()
             return make_response("", 204)
+
+
+class ExperimentData(MethodResource):
+    @marshal_with(schemas.ExperimentData, 200)
+    def get(self, id):
+        try:
+            return (
+                models.Experiment.query.filter(models.Experiment.id == id)
+                .filter(
+                    models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                    | models.Experiment.project_id.is_(None)
+                )
+                .one()
+            )
+        except NoResultFound:
+            abort(404, f"Cannot find object with id {id}")
 
 
 class Media(MethodResource):
@@ -602,7 +619,7 @@ class Samples(MethodResource):
 
 
 class ConditionData(MethodResource):
-    @marshal_with(schemas.ConditionData())
+    @marshal_with(schemas.ConditionData)
     def get(self, id):
         try:
             return (

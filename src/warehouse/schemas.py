@@ -144,23 +144,29 @@ class GrowthRate(Schema):
     uncertainty = fields.Float(required=True)
 
 
-class ConditionData(Schema):
-    class NestedMedium(Medium):
-        compounds = fields.Nested(MediumCompound, many=True, required=True)
+# Schemas below include full relation objects across foreign keys in the models.
 
-    class NestedSample(Sample):
-        fluxomics = fields.Nested(Fluxomics, many=True, required=True)
-        metabolomics = fields.Nested(Metabolomics, many=True, required=True)
-        proteomics = fields.Nested(Proteomics, many=True, required=True)
-        uptake_secretion_rates = fields.Nested(
-            UptakeSecretionRates, many=True, required=True
-        )
-        molar_yields = fields.Nested(MolarYields, many=True, required=True)
-        growth_rate = fields.Nested(GrowthRate, required=True)
 
-    id = fields.Integer(required=True)
-    experiment = fields.Nested(Experiment, required=True)
+class SampleData(Schema):
+    fluxomics = fields.Nested(Fluxomics, many=True, required=True)
+    metabolomics = fields.Nested(Metabolomics, many=True, required=True)
+    proteomics = fields.Nested(Proteomics, many=True, required=True)
+    uptake_secretion_rates = fields.Nested(
+        UptakeSecretionRates, many=True, required=True
+    )
+    molar_yields = fields.Nested(MolarYields, many=True, required=True)
+    growth_rate = fields.Nested(GrowthRate, required=True)
+
+
+class MediumData(Medium):
+    compounds = fields.Nested(MediumCompound, many=True, required=True)
+
+
+class ConditionData(Condition):
     strain = fields.Nested(Strain, required=True)
-    medium = fields.Nested(NestedMedium, required=True)
-    name = fields.String(required=True)
-    samples = fields.Nested(NestedSample, many=True, required=True)
+    medium = fields.Nested(MediumData, required=True)
+    samples = fields.Nested(SampleData, many=True, required=True)
+
+
+class ExperimentData(Experiment):
+    conditions = fields.Nested(ConditionData, many=True, required=True)
