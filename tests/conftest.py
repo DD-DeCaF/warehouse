@@ -125,7 +125,10 @@ def data_fixtures(session):
         experiment=experiment, strain=strain, medium=medium, name="Condition fixture"
     )
     sample = models.Sample(
-        condition=condition, start_time=datetime(2019, 10, 28, 14, 00), end_time=None
+        condition=condition,
+        name="Sample fixture",
+        start_time=datetime(2019, 10, 28, 14, 00),
+        end_time=None,
     )
     session.add(organism)
     session.add(strain)
