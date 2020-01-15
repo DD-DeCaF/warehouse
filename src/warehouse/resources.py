@@ -602,7 +602,7 @@ class Samples(MethodResource):
     @jwt_required
     @use_kwargs(schemas.Sample(exclude=("id",)))
     @marshal_with(schemas.Sample(only=("id",)), 201)
-    def post(self, condition_id, start_time, end_time):
+    def post(self, condition_id, name, start_time, end_time):
         try:
             condition = models.Condition.query.filter(
                 models.Condition.id == condition_id
@@ -611,7 +611,7 @@ class Samples(MethodResource):
         except NoResultFound:
             abort(404, f"Related object {condition_id} does not exist")
         sample = models.Sample(
-            condition=condition, start_time=start_time, end_time=end_time
+            condition=condition, name=name, start_time=start_time, end_time=end_time
         )
         db.session.add(sample)
         db.session.commit()

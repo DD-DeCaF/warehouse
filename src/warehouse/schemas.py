@@ -65,6 +65,7 @@ class Condition(Schema):
 class Sample(Schema):
     id = fields.Integer(required=True)
     condition_id = fields.Integer(required=True)
+    name = fields.String(required=True)
     start_time = fields.DateTime(required=True)
     end_time = fields.DateTime(required=True, allow_none=True)
 

@@ -128,6 +128,8 @@ class Sample(TimestampMixin, db.Model):
         backref=db.backref("samples", cascade="all, delete-orphan", lazy="dynamic"),
     )
 
+    name = db.Column(db.Text(), nullable=False)
+
     # Datetime fields for when the sample was taken. `end_time` is optional, used for
     # interval measurements like uptake rates or fluxomics.
     start_time = db.Column(db.DateTime, nullable=False)
