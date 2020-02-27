@@ -66,6 +66,11 @@ spec:
               name: warehouse-production
               key: BASIC_AUTH_PASSWORD
         command: ["flask", "db", "upgrade"]
+        resources:
+          requests:
+            cpu: "1m"
+          limits:
+            cpu: "2000m"
       containers:
       - name: web
         image: gcr.io/dd-decaf-cfbf6/warehouse:master
@@ -121,7 +126,7 @@ spec:
               key: BASIC_AUTH_PASSWORD
         resources:
           requests:
-            cpu: "10m"
+            cpu: "1m"
           limits:
             cpu: "2000m"
         command: ["gunicorn", "-c", "gunicorn.py", "warehouse.wsgi:app"]
