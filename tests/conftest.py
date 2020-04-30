@@ -78,7 +78,9 @@ def session(reset_tables, connection):
     """
     flask_sqlalchemy_session = db_.session
     transaction = connection.begin()
-    db_.session = db_.create_scoped_session(options={"bind": connection, "binds": {}})
+    db_.session = db_.create_scoped_session(
+        options={"bind": connection, "binds": {}}
+    )
     yield db_.session
     db_.session.close()
     transaction.rollback()
@@ -122,7 +124,10 @@ def data_fixtures(session):
         project_id=1, name="Experiment fixture", description="Lorem ipsum"
     )
     condition = models.Condition(
-        experiment=experiment, strain=strain, medium=medium, name="Condition fixture"
+        experiment=experiment,
+        strain=strain,
+        medium=medium,
+        name="Condition fixture",
     )
     sample = models.Sample(
         condition=condition,

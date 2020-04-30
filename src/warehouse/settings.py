@@ -58,7 +58,8 @@ class Default(object):
             "disable_existing_loggers": False,
             "formatters": {
                 "simple": {
-                    "format": "%(asctime)s [%(levelname)s] [%(name)s] " "%(message)s"
+                    "format": "%(asctime)s [%(levelname)s] [%(name)s] "
+                    "%(message)s"
                 }
             },
             "handlers": {
@@ -86,9 +87,9 @@ class Default(object):
         self.JWT_ACCESS_TOKEN_EXPIRES = False
         self.BASIC_AUTH_USERNAME = os.environ["BASIC_AUTH_USERNAME"]
         self.BASIC_AUTH_PASSWORD = os.environ["BASIC_AUTH_PASSWORD"]
-        self.JWT_PUBLIC_KEY = requests.get(f"{os.environ['IAM_API']}/keys").json()[
-            "keys"
-        ][0]
+        self.JWT_PUBLIC_KEY = requests.get(
+            f"{os.environ['IAM_API']}/keys"
+        ).json()["keys"][0]
 
 
 class Development(Default):
@@ -103,7 +104,9 @@ class Testing(Default):
     def __init__(self):
         super().__init__()
         self.TESTING = True
-        self.SQLALCHEMY_DATABASE_URI = "postgresql://postgres:@postgres:5432/testing"
+        self.SQLALCHEMY_DATABASE_URI = (
+            "postgresql://postgres:@postgres:5432/testing"
+        )
         self.SQLALCHEMY_DATABASE_URI = (
             "postgresql://{POSTGRES_ENV_USERNAME}:"
             "{POSTGRES_ENV_PASS}@{POSTGRES_HOST}:{POSTGRES_PORT}/"
@@ -133,6 +136,6 @@ class Production(Default):
         self.DEBUG = False
         self.SECRET_KEY = os.environ["SECRET_KEY"]
         self.LOGGING["root"]["level"] = "INFO"
-        self.JWT_PUBLIC_KEY = requests.get(f"{os.environ['IAM_API']}/keys").json()[
-            "keys"
-        ][0]
+        self.JWT_PUBLIC_KEY = requests.get(
+            f"{os.environ['IAM_API']}/keys"
+        ).json()["keys"][0]
