@@ -129,4 +129,3 @@ spec:
             cpu: "1m"
           limits:
             cpu: "2000m"
-        command: ["gunicorn", "-c", "gunicorn.py", "warehouse.wsgi:app"]
