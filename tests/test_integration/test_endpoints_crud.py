@@ -16,9 +16,9 @@
 """
 Test the CRUD endpoints in a repetitive fashion.
 
-A test performs a single HTTP request against one of the CRUD endpoints. Expect to see
-GET, POST for list endpoints, then GET, PUT, DELETE for item endpoints, repeated for
-each resource type.
+A test performs a single HTTP request against one of the CRUD endpoints.
+Expect to see GET, POST for list endpoints, then GET, PUT, DELETE for item
+endpoints, repeated for each resource type.
 """
 
 from sqlalchemy import Integer, cast

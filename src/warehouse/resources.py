@@ -118,8 +118,8 @@ class Organism(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(organism.project_id, "write")
-            # If modifying the project id, make sure the user has write permissions to
-            # the new project too.
+            # If modifying the project id, make sure the user has write
+            # permissions to the new project too.
             if "project_id" in payload:
                 jwt_require_claim(payload["project_id"], "write")
             for field, value in payload.items():
@@ -205,8 +205,8 @@ class Strain(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(strain.project_id, "write")
-            # If modifying the project id, make sure the user has write permissions to
-            # the new project too.
+            # If modifying the project id, make sure the user has write
+            # permissions to the new project too.
             if "project_id" in payload:
                 jwt_require_claim(payload["project_id"], "write")
             for field, value in payload.items():
@@ -282,8 +282,8 @@ class Experiment(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(experiment.project_id, "write")
-            # If modifying the project id, make sure the user has write permissions to
-            # the new project too.
+            # If modifying the project id, make sure the user has write
+            # permissions to the new project too.
             if "project_id" in payload:
                 jwt_require_claim(payload["project_id"], "write")
             for field, value in payload.items():
@@ -373,8 +373,8 @@ class Medium(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(medium.project_id, "write")
-            # If modifying the project id, make sure the user has write permissions to
-            # the new project too.
+            # If modifying the project id, make sure the user has write
+            # permissions to the new project too.
             if "project_id" in payload:
                 jwt_require_claim(payload["project_id"], "write")
             for field, value in payload.items():
@@ -786,7 +786,7 @@ class FluxomicsBatch(MethodResource):
             abort(
                 404,
                 f"Related objects: "
-                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"{', '.join(str(sid) for sid in missing_sample_ids)} "
                 f"do not exist",
             )
 
@@ -970,7 +970,7 @@ class MetabolomicsBatch(MethodResource):
             abort(
                 404,
                 f"Related objects: "
-                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"{', '.join(str(sid) for sid in missing_sample_ids)} "
                 f"do not exist",
             )
 
@@ -1156,7 +1156,7 @@ class ProteomicsBatch(MethodResource):
             abort(
                 404,
                 f"Related objects: "
-                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"{', '.join(str(sid) for sid in missing_sample_ids)} "
                 f"do not exist",
             )
 
