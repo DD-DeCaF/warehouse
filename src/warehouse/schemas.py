@@ -51,7 +51,9 @@ class MediumCompound(Schema):
     compound_name = fields.String(required=True)
     compound_identifier = fields.String(required=True)
     compound_namespace = fields.String(required=True)
-    mass_concentration = fields.Float(required=True, allow_none=True)  # unit: mmol/l
+    mass_concentration = fields.Float(
+        required=True, allow_none=True
+    )  # unit: mmol/l
 
 
 class Condition(Schema):
@@ -77,7 +79,9 @@ class Fluxomics(Schema):
     reaction_identifier = fields.String(required=True)
     reaction_namespace = fields.String(required=True)
     measurement = fields.Float(required=True)  # unit: mmol/gDW/h
-    uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW/h
+    uncertainty = fields.Float(
+        required=True, allow_none=True
+    )  # unit: mmol/gDW/h
 
 
 class FluxomicsBatchRequest(Schema):
@@ -120,7 +124,9 @@ class UptakeSecretionRates(Schema):
     compound_identifier = fields.String(required=True)
     compound_namespace = fields.String(required=True)
     measurement = fields.Float(required=True)  # unit: mmol/gDW/h
-    uncertainty = fields.Float(required=True, allow_none=True)  # unit: mmol/gDW/h
+    uncertainty = fields.Float(
+        required=True, allow_none=True
+    )  # unit: mmol/gDW/h
 
 
 class MolarYields(Schema):

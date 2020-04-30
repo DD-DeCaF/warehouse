@@ -4,6 +4,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - BASE_TAG=${BASE_TAG}
+        - BUILD_COMMIT=${BUILD_COMMIT:-unknown}
+        - BUILD_TIMESTAMP=${BUILD_TIMESTAMP:-unknown}
     image: gcr.io/dd-decaf-cfbf6/warehouse:${IMAGE_TAG:-latest}
     depends_on:
       - postgres
@@ -26,7 +30,7 @@ services:
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB_NAME=${POSTGRES_DB_NAME:-postgres}
       - POSTGRES_ENV_USERNAME=${POSTGRES_ENV_USERNAME:-postgres}
-      - POSTGRES_ENV_PASS=${POSTGRES_ENV_PASS}
+      - POSTGRES_ENV_PASS=${POSTGRES_ENV_PASS:-secret}
       - BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
       - IAM_API=https://api-staging.dd-decaf.eu/iam
@@ -35,6 +39,8 @@ services:
     image: postgres:9.6-alpine
     ports:
       - "${PG_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_ENV_PASS:-secret}
     networks:
       - default
 

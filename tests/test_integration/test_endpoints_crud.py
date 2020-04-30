@@ -16,9 +16,9 @@
 """
 Test the CRUD endpoints in a repetitive fashion.
 
-A test performs a single HTTP request against one of the CRUD endpoints. Expect to see
-GET, POST for list endpoints, then GET, PUT, DELETE for item endpoints, repeated for
-each resource type.
+A test performs a single HTTP request against one of the CRUD endpoints.
+Expect to see GET, POST for list endpoints, then GET, PUT, DELETE for item
+endpoints, repeated for each resource type.
 """
 
 from sqlalchemy import Integer, cast
@@ -252,7 +252,10 @@ def test_batch_post_proteomics(client, tokens, session, data_fixtures):
         .all()
     )
     for i in range(item_count):
-        assert proteomics[i].identifier == proteomics_request["body"][i]["identifier"]
+        assert (
+            proteomics[i].identifier
+            == proteomics_request["body"][i]["identifier"]
+        )
 
 
 def test_batch_post_fluxomics(client, tokens, session, data_fixtures):
@@ -316,7 +319,9 @@ def test_batch_post_metabolomics(client, tokens, session, data_fixtures):
     # Check that database entries match posted data
     metabolomics_ids = set([data["id"] for data in response.json])
     metabolomics = (
-        models.Metabolomics.query.filter(models.Metabolomics.id.in_(metabolomics_ids))
+        models.Metabolomics.query.filter(
+            models.Metabolomics.id.in_(metabolomics_ids)
+        )
         .order_by(cast(models.Metabolomics.compound_identifier, Integer))
         .all()
     )
