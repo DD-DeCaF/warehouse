@@ -118,8 +118,8 @@ class Organism(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(organism.project_id, "write")
-            # If modifying the project id, make sure the user has write permissions to
-            # the new project too.
+            # If modifying the project id, make sure the user has write
+            # permissions to the new project too.
             if "project_id" in payload:
                 jwt_require_claim(payload["project_id"], "write")
             for field, value in payload.items():
@@ -205,8 +205,8 @@ class Strain(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(strain.project_id, "write")
-            # If modifying the project id, make sure the user has write permissions to
-            # the new project too.
+            # If modifying the project id, make sure the user has write
+            # permissions to the new project too.
             if "project_id" in payload:
                 jwt_require_claim(payload["project_id"], "write")
             for field, value in payload.items():
@@ -282,8 +282,8 @@ class Experiment(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(experiment.project_id, "write")
-            # If modifying the project id, make sure the user has write permissions to
-            # the new project too.
+            # If modifying the project id, make sure the user has write
+            # permissions to the new project too.
             if "project_id" in payload:
                 jwt_require_claim(payload["project_id"], "write")
             for field, value in payload.items():
@@ -373,8 +373,8 @@ class Medium(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(medium.project_id, "write")
-            # If modifying the project id, make sure the user has write permissions to
-            # the new project too.
+            # If modifying the project id, make sure the user has write
+            # permissions to the new project too.
             if "project_id" in payload:
                 jwt_require_claim(payload["project_id"], "write")
             for field, value in payload.items():
@@ -407,7 +407,9 @@ class MediumCompounds(MethodResource):
             models.MediumCompound.medium.has(
                 models.Medium.project_id.in_(g.jwt_claims["prj"])
             )
-            | models.MediumCompound.medium.has(models.Medium.project_id.is_(None))
+            | models.MediumCompound.medium.has(
+                models.Medium.project_id.is_(None)
+            )
         ).all()
 
     @jwt_required
@@ -440,7 +442,9 @@ class MediumCompound(MethodResource):
     def get(self, id):
         try:
             return (
-                models.MediumCompound.query.filter(models.MediumCompound.id == id)
+                models.MediumCompound.query.filter(
+                    models.MediumCompound.id == id
+                )
                 .filter(
                     models.MediumCompound.medium.has(
                         models.Medium.project_id.in_(g.jwt_claims["prj"])
@@ -460,7 +464,9 @@ class MediumCompound(MethodResource):
     def put(self, id, **payload):
         try:
             medium_compound = (
-                models.MediumCompound.query.filter(models.MediumCompound.id == id)
+                models.MediumCompound.query.filter(
+                    models.MediumCompound.id == id
+                )
                 .filter(
                     models.MediumCompound.medium.has(
                         models.Medium.project_id.in_(g.jwt_claims["prj"])
@@ -482,7 +488,9 @@ class MediumCompound(MethodResource):
     def delete(self, id):
         try:
             medium_compound = (
-                models.MediumCompound.query.filter(models.MediumCompound.id == id)
+                models.MediumCompound.query.filter(
+                    models.MediumCompound.id == id
+                )
                 .filter(
                     models.MediumCompound.medium.has(
                         models.Medium.project_id.in_(g.jwt_claims["prj"])
@@ -506,7 +514,9 @@ class Conditions(MethodResource):
             models.Condition.experiment.has(
                 models.Experiment.project_id.in_(g.jwt_claims["prj"])
             )
-            | models.Condition.experiment.has(models.Experiment.project_id.is_(None))
+            | models.Condition.experiment.has(
+                models.Experiment.project_id.is_(None)
+            )
         ).all()
 
     @jwt_required
@@ -596,7 +606,9 @@ class Samples(MethodResource):
             models.Sample.condition.has(
                 models.Experiment.project_id.in_(g.jwt_claims["prj"])
             )
-            | models.Sample.condition.has(models.Experiment.project_id.is_(None))
+            | models.Sample.condition.has(
+                models.Experiment.project_id.is_(None)
+            )
         ).all()
 
     @jwt_required
@@ -611,7 +623,10 @@ class Samples(MethodResource):
         except NoResultFound:
             abort(404, f"Related object {condition_id} does not exist")
         sample = models.Sample(
-            condition=condition, name=name, start_time=start_time, end_time=end_time
+            condition=condition,
+            name=name,
+            start_time=start_time,
+            end_time=end_time,
         )
         db.session.add(sample)
         db.session.commit()
@@ -735,7 +750,9 @@ class Fluxomics(MethodResource):
         uncertainty,
     ):
         try:
-            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            sample = models.Sample.query.filter(
+                models.Sample.id == sample_id
+            ).one()
             jwt_require_claim(sample.condition.experiment.project_id, "write")
         except NoResultFound:
             abort(404, f"Related object {sample_id} does not exist")
@@ -758,7 +775,9 @@ class FluxomicsBatch(MethodResource):
     @marshal_with(schemas.Fluxomics(only=("id",), many=True), 201)
     def post(self, body):
         sample_ids = set(fluxomics_item["sample_id"] for fluxomics_item in body)
-        samples = models.Sample.query.filter(models.Sample.id.in_(sample_ids)).all()
+        samples = models.Sample.query.filter(
+            models.Sample.id.in_(sample_ids)
+        ).all()
 
         if len(sample_ids) != len(samples):
             missing_sample_ids = sample_ids.difference(
@@ -767,7 +786,7 @@ class FluxomicsBatch(MethodResource):
             abort(
                 404,
                 f"Related objects: "
-                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"{', '.join(str(sid) for sid in missing_sample_ids)} "
                 f"do not exist",
             )
 
@@ -800,7 +819,9 @@ class Fluxomic(MethodResource):
                     models.Fluxomics.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -828,7 +849,9 @@ class Fluxomic(MethodResource):
                     models.Fluxomics.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -838,7 +861,9 @@ class Fluxomic(MethodResource):
         except NoResultFound:
             abort(404, f"Cannot find object with id {id}")
         else:
-            jwt_require_claim(fluxomics.sample.condition.experiment.project_id, "write")
+            jwt_require_claim(
+                fluxomics.sample.condition.experiment.project_id, "write"
+            )
             for field, value in payload.items():
                 setattr(fluxomics, field, value)
             db.session.add(fluxomics)
@@ -854,7 +879,9 @@ class Fluxomic(MethodResource):
                     models.Fluxomics.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -864,7 +891,9 @@ class Fluxomic(MethodResource):
         except NoResultFound:
             abort(404, f"Cannot find object with id {id}")
         else:
-            jwt_require_claim(fluxomics.sample.condition.experiment.project_id, "admin")
+            jwt_require_claim(
+                fluxomics.sample.condition.experiment.project_id, "admin"
+            )
             db.session.delete(fluxomics)
             db.session.commit()
             return make_response("", 204)
@@ -903,7 +932,9 @@ class Metabolomics(MethodResource):
         uncertainty,
     ):
         try:
-            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            sample = models.Sample.query.filter(
+                models.Sample.id == sample_id
+            ).one()
             jwt_require_claim(sample.condition.experiment.project_id, "write")
         except NoResultFound:
             abort(404, f"Related object {sample_id} does not exist")
@@ -925,8 +956,12 @@ class MetabolomicsBatch(MethodResource):
     @use_kwargs(schemas.MetabolomicsBatchRequest)
     @marshal_with(schemas.Metabolomics(only=("id",), many=True), 201)
     def post(self, body):
-        sample_ids = set(metabolomics_item["sample_id"] for metabolomics_item in body)
-        samples = models.Sample.query.filter(models.Sample.id.in_(sample_ids)).all()
+        sample_ids = set(
+            metabolomics_item["sample_id"] for metabolomics_item in body
+        )
+        samples = models.Sample.query.filter(
+            models.Sample.id.in_(sample_ids)
+        ).all()
 
         if len(sample_ids) != len(samples):
             missing_sample_ids = sample_ids.difference(
@@ -935,7 +970,7 @@ class MetabolomicsBatch(MethodResource):
             abort(
                 404,
                 f"Related objects: "
-                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"{', '.join(str(sid) for sid in missing_sample_ids)} "
                 f"do not exist",
             )
 
@@ -968,7 +1003,9 @@ class Metabolomic(MethodResource):
                     models.Metabolomics.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -996,7 +1033,9 @@ class Metabolomic(MethodResource):
                     models.Metabolomics.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1024,7 +1063,9 @@ class Metabolomic(MethodResource):
                     models.Metabolomics.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1066,10 +1107,19 @@ class Proteomics(MethodResource):
     @use_kwargs(schemas.Proteomics(exclude=("id",)))
     @marshal_with(schemas.Proteomics(only=("id",)), 201)
     def post(
-        self, sample_id, identifier, name, full_name, gene, measurement, uncertainty
+        self,
+        sample_id,
+        identifier,
+        name,
+        full_name,
+        gene,
+        measurement,
+        uncertainty,
     ):
         try:
-            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            sample = models.Sample.query.filter(
+                models.Sample.id == sample_id
+            ).one()
             jwt_require_claim(sample.condition.experiment.project_id, "write")
         except NoResultFound:
             abort(404, f"Related object {sample_id} does not exist")
@@ -1092,8 +1142,12 @@ class ProteomicsBatch(MethodResource):
     @use_kwargs(schemas.ProteomicsBatchRequest)
     @marshal_with(schemas.Proteomics(only=("id",), many=True), 201)
     def post(self, body):
-        sample_ids = set(proteomics_item["sample_id"] for proteomics_item in body)
-        samples = models.Sample.query.filter(models.Sample.id.in_(sample_ids)).all()
+        sample_ids = set(
+            proteomics_item["sample_id"] for proteomics_item in body
+        )
+        samples = models.Sample.query.filter(
+            models.Sample.id.in_(sample_ids)
+        ).all()
 
         if len(sample_ids) != len(samples):
             missing_sample_ids = sample_ids.difference(
@@ -1102,7 +1156,7 @@ class ProteomicsBatch(MethodResource):
             abort(
                 404,
                 f"Related objects: "
-                f"{', '.join(str(sample_id) for sample_id in missing_sample_ids)} "
+                f"{', '.join(str(sid) for sid in missing_sample_ids)} "
                 f"do not exist",
             )
 
@@ -1136,7 +1190,9 @@ class Proteomic(MethodResource):
                     models.Proteomics.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1164,7 +1220,9 @@ class Proteomic(MethodResource):
                     models.Proteomics.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1192,7 +1250,9 @@ class Proteomic(MethodResource):
                     models.Proteomics.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1243,7 +1303,9 @@ class UptakeSecretionRates(MethodResource):
         uncertainty,
     ):
         try:
-            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            sample = models.Sample.query.filter(
+                models.Sample.id == sample_id
+            ).one()
             jwt_require_claim(sample.condition.experiment.project_id, "write")
         except NoResultFound:
             abort(404, f"Related object {sample_id} does not exist")
@@ -1272,7 +1334,9 @@ class UptakeSecretionRate(MethodResource):
                     models.UptakeSecretionRates.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1302,7 +1366,9 @@ class UptakeSecretionRate(MethodResource):
                     models.UptakeSecretionRates.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1313,7 +1379,8 @@ class UptakeSecretionRate(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(
-                uptake_secretion_rate.sample.condition.experiment.project_id, "write"
+                uptake_secretion_rate.sample.condition.experiment.project_id,
+                "write",
             )
             for field, value in payload.items():
                 setattr(uptake_secretion_rate, field, value)
@@ -1332,7 +1399,9 @@ class UptakeSecretionRate(MethodResource):
                     models.UptakeSecretionRates.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1343,7 +1412,8 @@ class UptakeSecretionRate(MethodResource):
             abort(404, f"Cannot find object with id {id}")
         else:
             jwt_require_claim(
-                uptake_secretion_rate.sample.condition.experiment.project_id, "admin"
+                uptake_secretion_rate.sample.condition.experiment.project_id,
+                "admin",
             )
             db.session.delete(uptake_secretion_rate)
             db.session.commit()
@@ -1386,7 +1456,9 @@ class MolarYields(MethodResource):
         uncertainty,
     ):
         try:
-            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            sample = models.Sample.query.filter(
+                models.Sample.id == sample_id
+            ).one()
             jwt_require_claim(sample.condition.experiment.project_id, "write")
         except NoResultFound:
             abort(404, f"Related object {sample_id} does not exist")
@@ -1416,7 +1488,9 @@ class MolarYield(MethodResource):
                     models.MolarYields.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1444,7 +1518,9 @@ class MolarYield(MethodResource):
                     models.MolarYields.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1472,7 +1548,9 @@ class MolarYield(MethodResource):
                     models.MolarYields.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1515,7 +1593,9 @@ class GrowthRates(MethodResource):
     @marshal_with(schemas.GrowthRate(only=("id",)), 201)
     def post(self, sample_id, measurement, uncertainty):
         try:
-            sample = models.Sample.query.filter(models.Sample.id == sample_id).one()
+            sample = models.Sample.query.filter(
+                models.Sample.id == sample_id
+            ).one()
             jwt_require_claim(sample.condition.experiment.project_id, "write")
         except NoResultFound:
             abort(404, f"Related object {sample_id} does not exist")
@@ -1537,7 +1617,9 @@ class GrowthRate(MethodResource):
                     models.Growth.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1565,7 +1647,9 @@ class GrowthRate(MethodResource):
                     models.Growth.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )
@@ -1593,7 +1677,9 @@ class GrowthRate(MethodResource):
                     models.Growth.sample.has(
                         models.Sample.condition.has(
                             models.Condition.experiment.has(
-                                models.Experiment.project_id.in_(g.jwt_claims["prj"])
+                                models.Experiment.project_id.in_(
+                                    g.jwt_claims["prj"]
+                                )
                             )
                         )
                     )

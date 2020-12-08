@@ -45,7 +45,9 @@ def init_app(app):
         try:
             _, token = auth.split(" ", 1)
             g.jwt_claims = jwt.decode(
-                token, app.config["JWT_PUBLIC_KEY"], app.config["JWT_PUBLIC_KEY"]["alg"]
+                token,
+                app.config["JWT_PUBLIC_KEY"],
+                app.config["JWT_PUBLIC_KEY"]["alg"],
             )
             # JSON object names can only be strings. Map project ids to ints for
             # easier handling
@@ -54,7 +56,11 @@ def init_app(app):
             }
             g.jwt_valid = True
             logger.debug(f"JWT claims accepted: {g.jwt_claims}")
-        except (jwt.JWTError, jwt.ExpiredSignatureError, jwt.JWTClaimsError) as e:
+        except (
+            jwt.JWTError,
+            jwt.ExpiredSignatureError,
+            jwt.JWTClaimsError,
+        ) as e:
             abort(401, f"JWT authentication failed: {e}")
 
 

@@ -43,7 +43,8 @@ class Strain(TimestampMixin, db.Model):
     organism = db.relationship(Organism)
 
     parent_id = db.Column(
-        db.Integer, db.ForeignKey("strain.id", onupdate="CASCADE", ondelete="CASCADE")
+        db.Integer,
+        db.ForeignKey("strain.id", onupdate="CASCADE", ondelete="CASCADE"),
     )
     parent = db.relationship("Strain", uselist=False)
 
@@ -76,7 +77,9 @@ class MediumCompound(TimestampMixin, db.Model):
     )
     medium = db.relationship(
         Medium,
-        backref=db.backref("compounds", cascade="all, delete-orphan", lazy="dynamic"),
+        backref=db.backref(
+            "compounds", cascade="all, delete-orphan", lazy="dynamic"
+        ),
     )
 
     compound_name = db.Column(db.Text())
@@ -95,7 +98,9 @@ class Condition(TimestampMixin, db.Model):
     )
     experiment = db.relationship(
         Experiment,
-        backref=db.backref("conditions", cascade="all, delete-orphan", lazy="dynamic"),
+        backref=db.backref(
+            "conditions", cascade="all, delete-orphan", lazy="dynamic"
+        ),
     )
 
     strain_id = db.Column(
@@ -125,13 +130,15 @@ class Sample(TimestampMixin, db.Model):
     )
     condition = db.relationship(
         Condition,
-        backref=db.backref("samples", cascade="all, delete-orphan", lazy="dynamic"),
+        backref=db.backref(
+            "samples", cascade="all, delete-orphan", lazy="dynamic"
+        ),
     )
 
     name = db.Column(db.Text(), nullable=False)
 
-    # Datetime fields for when the sample was taken. `end_time` is optional, used for
-    # interval measurements like uptake rates or fluxomics.
+    # Datetime fields for when the sample was taken. `end_time` is optional,
+    # used for interval measurements like uptake rates or fluxomics.
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=True)
 
@@ -146,7 +153,9 @@ class Fluxomics(TimestampMixin, db.Model):
     )
     sample = db.relationship(
         Sample,
-        backref=db.backref("fluxomics", cascade="all, delete-orphan", lazy="dynamic"),
+        backref=db.backref(
+            "fluxomics", cascade="all, delete-orphan", lazy="dynamic"
+        ),
     )
 
     reaction_name = db.Column(db.Text(), nullable=False)
@@ -191,7 +200,9 @@ class UptakeSecretionRates(TimestampMixin, db.Model):
     sample = db.relationship(
         Sample,
         backref=db.backref(
-            "uptake_secretion_rates", cascade="all, delete-orphan", lazy="dynamic"
+            "uptake_secretion_rates",
+            cascade="all, delete-orphan",
+            lazy="dynamic",
         ),
     )
 
@@ -213,7 +224,9 @@ class Proteomics(TimestampMixin, db.Model):
     )
     sample = db.relationship(
         Sample,
-        backref=db.backref("proteomics", cascade="all, delete-orphan", lazy="dynamic"),
+        backref=db.backref(
+            "proteomics", cascade="all, delete-orphan", lazy="dynamic"
+        ),
     )
 
     identifier = db.Column(db.Text(), nullable=False)
@@ -264,7 +277,10 @@ class Growth(TimestampMixin, db.Model):
     sample = db.relationship(
         Sample,
         backref=db.backref(
-            "growth_rate", uselist=False, cascade="all, delete-orphan", lazy="select"
+            "growth_rate",
+            uselist=False,
+            cascade="all, delete-orphan",
+            lazy="select",
         ),
     )
 
